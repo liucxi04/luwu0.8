@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 
     Logger::ptr test_logger = LUWU_LOG_NAME("test_logger");
     StdoutLogAppender::ptr appender(new StdoutLogAppender);
-    LogFormatter::ptr formatter(new LogFormatter("%d:%rms%T%p%T%c%T%f:%l %m%n")); // 时间：启动毫秒数 级别 日志名称 文件名：行号 消息 换行
+    LogFormatter::ptr formatter(new LogFormatter("%d:%rms%T%p%T%c%T%f:%l %m %n")); // 时间：启动毫秒数 级别 日志名称 文件名：行号 消息 换行
     appender->setFormatter(formatter);
     test_logger->addAppender(appender);
     test_logger->setLevel(LogLevel::WARN);

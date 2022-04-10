@@ -8,19 +8,24 @@
 #include <string>
 #include <memory>
 #include <sstream>
-#include "log.h"
+#include <utility>
+#include <vector>
+#include <map>
+#include <set>
+#include <yaml-cpp/yaml.h>
 #include <boost/lexical_cast.hpp>
+#include "log.h"
 
 namespace liucxi {
     class ConfigVarBase {
     public:
         typedef std::shared_ptr<ConfigVarBase> ptr;
 
-        ConfigVarBase(const std::string &name, const std::string &describe = "")
-                : m_name(name), m_describe(describe) {
+        explicit ConfigVarBase(std::string name, std::string describe = "")
+                : m_name(std::move(name)), m_describe(std::move(describe)) {
         }
 
-        virtual ~ConfigVarBase() {};
+        virtual ~ConfigVarBase() = default;
 
         const std::string &getName() const { return m_name; }
 
@@ -35,28 +40,131 @@ namespace liucxi {
         std::string m_describe;
     };
 
-    template<typename T>
+    template<typename From, typename To>
+    class LexicalCast {
+    public:
+        To operator()(const From &v) {
+            return boost::lexical_cast<To>(v);
+        }
+    };
+
+    template<typename To>
+    class LexicalCast<std::string, std::vector<To>> {
+    public:
+        std::vector<To> operator() (const std::string &v) {
+            YAML::Node node = YAML::Load(v);
+            typename std::vector<To> vec;
+            std::stringstream ss;
+            for (auto i : node) {
+                ss.str("");
+                ss << i;
+                vec.push_back(LexicalCast<std::string, To>()(ss.str()));
+            }
+            return vec;
+        }
+    };
+
+    template<typename From>
+    class LexicalCast<std::vector<From>, std::string> {
+    public:
+        std::string operator() (const std::vector<From> &v) {
+            YAML::Node node;
+            std::stringstream ss;
+            for (auto &i : v) {
+                node.push_back(YAML::Load(LexicalCast<From, std::string>()(i)));
+            }
+            ss << node;
+            return ss.str();
+        }
+    };
+
+    template<typename To>
+    class LexicalCast<std::string, std::set<To>> {
+    public:
+        std::set<To> operator() (const std::string &v) {
+            YAML::Node node = YAML::Load(v);
+            typename std::set<To> vec;
+            std::stringstream ss;
+            for (auto i : node) {
+                ss.str("");
+                ss << i;
+                vec.intsert(LexicalCast<std::string, To>()(ss.str()));
+            }
+            return vec;
+        }
+    };
+
+    template<typename From>
+    class LexicalCast<std::set<From>, std::string> {
+    public:
+        std::string operator() (const std::set<From> &v) {
+            YAML::Node node;
+            std::stringstream ss;
+            for (auto &i : v) {
+                node.push_back(YAML::Load(LexicalCast<From, std::string>()(i)));
+            }
+            ss << node;
+            return ss.str();
+        }
+    };
+
+    template<typename To>
+    class LexicalCast<std::string, std::map<std::string, To>> {
+    public:
+        std::map<std::string, To> operator() (const std::string &v) {
+            YAML::Node node = YAML::Load(v);
+            typename std::map<std::string, To> vec;
+            std::stringstream ss;
+            for (auto it = node.begin(); it != node.end(); ++it) {
+                ss.str("");
+                ss << it->second;
+                vec.intsert(std::make_pair(it->first.Scalar(),
+                                           LexicalCast<std::string, To>()(ss.str())));
+            }
+            return vec;
+        }
+    };
+
+    template<typename From>
+    class LexicalCast<std::map<std::string, From>, std::string> {
+    public:
+        std::string operator() (const std::map<std::string, From> &v) {
+            YAML::Node node;
+            std::stringstream ss;
+            for (auto &i : v) {
+                node[i.first] = YAML::Load(LexicalCast<From, std::string>()(i.second));
+            }
+            ss << node;
+            return ss.str();
+        }
+    };
+
+
+    template<typename T, typename FromStr = LexicalCast<std::string, T>
+                        , typename ToStr = LexicalCast<T, std::string>>
     class ConfigVar : public ConfigVarBase {
     public:
         typedef std::shared_ptr<ConfigVar<T>> ptr;
 
         ConfigVar(const std::string &name, const T &default_val, const std::string &describe)
-            : ConfigVarBase(name, describe)
-            , m_val(default_val) {
+                : ConfigVarBase(name, describe), m_val(default_val) {
         }
 
         std::string toString() override {
             try {
-                return boost::lexical_cast<std::string>(m_val);
+//                return boost::lexical_cast<std::string>(m_val);
+                return ToStr()(m_val);
             } catch (std::exception &e) {
                 LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "ConfigVar::toString exception" << e.what()
-                << "convert: " << typeid(m_val).name() << "to string";
+                                                << "convert: " << typeid(m_val).name() << "to string";
             }
             return "";
         }
+
         bool fromString(const std::string &val) override {
             try {
-                m_val = boost::lexical_cast<T>(val);
+//                m_val = boost::lexical_cast<T>(val);
+                setValue(FromStr()(val));
             } catch (std::exception &e) {
                 LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "ConfigVar::fromString exception" << e.what()
                                                 << "convert: string to" << typeid(m_val).name();
@@ -65,7 +173,9 @@ namespace liucxi {
         }
 
         T getValue() const { return m_val; }
+
         void setValue(T val) { m_val = val; }
+
     private:
         T m_val;
     };

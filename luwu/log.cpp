@@ -11,6 +11,7 @@
 
 namespace liucxi {
 
+    /// 以下是 LogLevel 类实现
     std::string LogLevel::toString(LogLevel::Level level) {
         switch (level) {
 #define XX(name) case Level::name : return #name;
@@ -42,6 +43,7 @@ namespace liucxi {
         return LogLevel::UNKNOWN;
     }
 
+    /// 以下是 LogEvent 类实现
     LogEvent::LogEvent(std::string logger_name, LogLevel::Level level, const char *file, int32_t line,
                        int64_t elapse, uint32_t thread_id, uint64_t fiber_id, time_t time,
                        std::string thread_name)
@@ -63,6 +65,7 @@ namespace liucxi {
         va_end(ap);
     }
 
+    /// 以下是 FormatItem 类所有子类的实现
     class MessageFormatItem : public LogFormatter::FormatItem {
     public:
         explicit MessageFormatItem(const std::string& str) { }
@@ -129,7 +132,7 @@ namespace liucxi {
         }
         void format(std::ostream &os, LogEvent::ptr event) override {
             struct tm tm{};
-            time_t time = event->getTime();
+            auto time = (time_t)event->getTime();
             localtime_r(&time, &tm);
             char buf[64];
             strftime(buf, sizeof(buf), m_format.c_str(), &tm);
@@ -188,7 +191,7 @@ namespace liucxi {
     }
 
     /**
-     * 状态机来实现字符串的解析
+     * @brief 状态机来实现字符串的解析
      * */
     void LogFormatter::init() {
         // 按顺序存储解析到的 pattern 项
@@ -211,14 +214,14 @@ namespace liucxi {
             if (c == "%") {
                 if (parsing_string) {
                     if (!tmp.empty()) {
-                        patterns.push_back(std::make_pair(0, tmp)); // 在解析常规字符时遇到 %，表示开始解析模板字符
+                        patterns.emplace_back(0, tmp); // 在解析常规字符时遇到 %，表示开始解析模板字符
                     }
                     tmp.clear();
                     parsing_string = false;
                     ++i;
                     continue;
                 }
-                patterns.push_back(std::make_pair(1, c)); // 在解析模板字符时遇到 %，表示这里是一个转义字符
+                patterns.emplace_back(1, c); // 在解析模板字符时遇到 %，表示这里是一个转义字符
                 parsing_string = true;
                 ++i;
                 continue;
@@ -228,7 +231,7 @@ namespace liucxi {
                     ++i;
                     continue;
                 }
-                patterns.push_back(std::make_pair(1, c)); // 模板字符直接添加，因为模板字符只有 1 个字母
+                patterns.emplace_back(1, c); // 模板字符直接添加，因为模板字符只有 1 个字母
                 parsing_string = true;
                 if (c != "d") {
                     ++i;
@@ -260,7 +263,7 @@ namespace liucxi {
         }
         // 模板解析最后的常规字符也要记得加进去
         if (!tmp.empty()) {
-            patterns.push_back(std::make_pair(0, tmp));
+            patterns.emplace_back(0, tmp);
             tmp.clear();
         }
 
@@ -275,7 +278,7 @@ namespace liucxi {
                 XX(f, FileNameFormatItem)
                 XX(l, LineFormatItem)
                 XX(t, ThreadIdFormatItem)
-                XX(f, FiberIdFormatItem)
+                XX(b, FiberIdFormatItem)
                 XX(n, ThreadNameFormatItem)
                 XX(N, NewLineFormatItem)
                 XX(T, TabFormatItem)
@@ -320,6 +323,7 @@ namespace liucxi {
         return os;
     }
 
+    /// 以下是 LogAppender 子类实现
     void StdoutLogAppender::log(LogEvent::ptr event) {
         if (m_formatter) {
             m_formatter->format(std::cout, event);
@@ -328,9 +332,9 @@ namespace liucxi {
         }
     }
 
-    FileLogAppender::FileLogAppender(const std::string &filename)
+    FileLogAppender::FileLogAppender(std::string filename)
         : LogAppender(std::make_shared<LogFormatter>())
-        , m_filename(filename) {
+        , m_filename(std::move(filename)) {
         reopen();
         if (m_reopenError) {
             std::cout << "reopen file " << m_filename << " error" << std::endl;
@@ -354,6 +358,7 @@ namespace liucxi {
         }
     }
 
+    /// 以下是 Logger 类实现
     void Logger::addAppender(const LogAppender::ptr& appender) {
         m_appenderList.push_back(appender);
     }
@@ -370,6 +375,7 @@ namespace liucxi {
         }
     }
 
+    /// 以下是 LogManager 类实现
     LoggerManager::LoggerManager() {
         m_root.reset(new Logger("root"));
         m_root->addAppender(LogAppender::ptr(new StdoutLogAppender));
