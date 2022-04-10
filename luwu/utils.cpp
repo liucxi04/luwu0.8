@@ -8,7 +8,7 @@
 
 namespace liucxi {
     pid_t getThreadId() {
-        return syscall(SYS_gettid);
+        return (pid_t)syscall(SYS_gettid);
     }
 
     u_int64_t getFiberId() {
@@ -24,7 +24,7 @@ namespace liucxi {
     std::string getThreadName() {
         char threadName[16] = {0};
         pthread_getname_np(pthread_self(), threadName, 16);
-        return std::string(threadName);
+        return std::string{threadName};
     }
 
     void setThreadName(const std::string &name) {

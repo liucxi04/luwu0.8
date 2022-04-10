@@ -21,7 +21,7 @@
 
 
 /**
- * 获取 root 日志器
+ * 获取 root 日志器，默认级别为 WARN
  * */
 #define LUWU_LOG_ROOT() liucxi::LoggerMgr::getInstance().getRoot()
 
@@ -82,6 +82,7 @@ namespace liucxi {
         };
 
         static std::string toString(LogLevel::Level level);
+
         static LogLevel::Level fromString(const std::string &str);
     };
 
@@ -92,22 +93,32 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<LogEvent> ptr;
 
-        LogEvent(std::string logger_name, LogLevel::Level level, const char *file, int32_t line
-                , int64_t elapse, uint32_t thread_id, uint64_t fiber_id, time_t time, std::string thread_name);
+        LogEvent(std::string logger_name, LogLevel::Level level, const char *file, int32_t line, int64_t elapse,
+                 uint32_t thread_id, uint64_t fiber_id, time_t time, std::string thread_name);
 
         const std::string &getLoggerName() const { return m_loggerName; }
+
         LogLevel::Level getLevel() const { return m_level; }
+
         /**
          * @note getSS() 不可返回 const 类型
          * */
-        std::stringstream &getSS()  { return m_ss; }
+        std::stringstream &getSS() { return m_ss; }
+
         std::string getContent() const { return m_ss.str(); }
+
         const char *getFile() const { return m_file; }
+
         int32_t getLine() const { return m_line; }
+
         uint32_t getElapse() const { return m_elapse; }
+
         uint32_t getThreadId() const { return m_threadId; }
+
         uint32_t getFiberId() const { return m_fiberId; }
+
         uint64_t getTime() const { return m_time; }
+
         const std::string &getThreadName() const { return m_threadName; }
 
         static void printf(const char *fmt, ...);
@@ -132,36 +143,39 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<LogFormatter> ptr;
 
-         /**
-         * @brief 构造函数
-         * @details 参数说明：
-         * - %m 消息
-         * - %p 日志级别
-         * - %c 日志器名称
-         * - %d 日期时间，后面跟一对括号指定时间格式，如%d{%Y-%m-%d %H:%M:%S}
-         * - %r 程序运行到现在的毫秒数
-         * - %f 文件名
-         * - %l 行号
-         * - %t 线程id
-         * - %b 协程id
-         * - %n 线程名称
-         * - %T 制表符
-         * - %N 换行
-         *
-         * 默认格式："%d{%Y-%m-%d %H:%M:%S}%T[%rms]%T%t%T%n%T%b%T[%p]%T[%c]%T%f:%l%T%m%N"
-         * 格式描述：年-月-日 时:分:秒 [累计运行毫秒数] 线程id 线程名称 协程id [日志级别] [日志器名称] 文件名:行号 日志消息
-         */
+        /**
+        * @brief 构造函数
+        * @details 参数说明：
+        * - %m 消息
+        * - %p 日志级别
+        * - %c 日志器名称
+        * - %d 日期时间，后面跟一对括号指定时间格式，如%d{%Y-%m-%d %H:%M:%S}
+        * - %r 程序运行到现在的毫秒数
+        * - %f 文件名
+        * - %l 行号
+        * - %t 线程id
+        * - %b 协程id
+        * - %n 线程名称
+        * - %T 制表符
+        * - %N 换行
+        *
+        * 默认格式："%d{%Y-%m-%d %H:%M:%S}%T[%rms]%T%t%T%n%T%b%T[%p]%T[%c]%T%f:%l%T%m%N"
+        * 格式描述：年-月-日 时:分:秒 [累计运行毫秒数] 线程id 线程名称 协程id [日志级别] [日志器名称] 文件名:行号 日志消息
+        */
         explicit LogFormatter(std::string pattern =
-                "%d{%Y-%m-%d %H:%M:%S}%T[%rms]%T%t%T%n%T%b%T[%p]%T[%c]%T%f:%l%T%m%N");
+        "%d{%Y-%m-%d %H:%M:%S}%T[%rms]%T%t%T%n%T%b%T[%p]%T[%c]%T%f:%l%T%m%N");
 
-        std::string format(const LogEvent::ptr& event);
-        std::ostream &format(std::ostream &os, const LogEvent::ptr& event);
+        std::string format(const LogEvent::ptr &event);
+
+        std::ostream &format(std::ostream &os, const LogEvent::ptr &event);
+
         /**
          * 字符串解析
          * */
         void init();
 
         bool getError() const { return m_error; }
+
         const std::string &getPattern() const { return m_pattern; }
 
     public:
@@ -171,7 +185,9 @@ namespace liucxi {
         class FormatItem {
         public:
             typedef std::shared_ptr<FormatItem> ptr;
+
             virtual ~FormatItem() = default;
+
             virtual void format(std::ostream &os, LogEvent::ptr event) = 0;
         };
 
@@ -189,8 +205,9 @@ namespace liucxi {
         typedef std::shared_ptr<LogAppender> ptr;
 
         explicit LogAppender(LogFormatter::ptr formatter)
-            : m_defaultFormatter(std::move(formatter)) {
+                : m_defaultFormatter(std::move(formatter)) {
         };
+
         virtual ~LogAppender() = default;
 
         /**
@@ -199,7 +216,9 @@ namespace liucxi {
         virtual void log(LogEvent::ptr event) = 0;
 
         void setFormatter(const LogFormatter::ptr &formatter) { m_formatter = formatter; };
+
         LogFormatter::ptr getFormatter() const { return m_formatter ? m_formatter : m_defaultFormatter; }
+
     protected:
         LogFormatter::ptr m_formatter;        /// 用户指定的格式
         LogFormatter::ptr m_defaultFormatter; /// 默认的格式
@@ -212,8 +231,11 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<StdoutLogAppender> ptr;
 
+        /**
+         * @brief StdoutLogAppender 构造函数调用父类构造函数，传入一个 LogFormatter 它有一个默认格式
+         * */
         StdoutLogAppender()
-            : LogAppender(std::make_shared<LogFormatter>()) {
+                : LogAppender(std::make_shared<LogFormatter>()) {
         };
 
         void log(LogEvent::ptr event) override;
@@ -249,17 +271,21 @@ namespace liucxi {
         typedef std::shared_ptr<Logger> ptr;
 
         explicit Logger(std::string name = "default")
-            : m_name(std::move(name))
-            , m_level(LogLevel::WARN) {
+                : m_name(std::move(name)), m_level(LogLevel::WARN) {
         };
 
-        void log(const LogEvent::ptr& event);
+        void log(const LogEvent::ptr &event);
 
         const std::string &getName() const { return m_name; }
+
         LogLevel::Level getLevel() const { return m_level; };
+
         void setLevel(LogLevel::Level level) { m_level = level; }
-        void addAppender(const LogAppender::ptr& appender);
-        void delAppender(const LogAppender::ptr& appender);
+
+        void addAppender(const LogAppender::ptr &appender);
+
+        void delAppender(const LogAppender::ptr &appender);
+
         uint64_t getCreateTime() const { return m_creatTime; }
 
     private:
@@ -269,33 +295,48 @@ namespace liucxi {
         uint64_t m_creatTime{};                             /// 创建时间
     };
 
+    /**
+     * @brief 日志器和日志事件的包装类
+     * @note 这个类的最大特点是在析构时打印日志事件，所以我们可以临时构造 LogEventWrap 对象快速打印一个事件
+     * */
     class LogEventWrap {
     public:
         LogEventWrap(Logger::ptr logger, LogEvent::ptr event)
-            : m_logger(std::move(logger))
-            , m_event(std::move(event)) {
+                : m_logger(std::move(logger)), m_event(std::move(event)) {
         };
+
         ~LogEventWrap() {
             m_logger->log(m_event);
         };
+
         LogEvent::ptr getLogEvent() const { return m_event; }
+
     private:
         Logger::ptr m_logger;
         LogEvent::ptr m_event;
     };
 
+    /**
+     * @brief 日志器的管理类，内含一个默认的 root 日志器，还有多个用户添加的 Logger
+     * */
     class LoggerManager {
     public:
         LoggerManager();
+
         void init();
 
         Logger::ptr getLogger(const std::string &name);
+
         Logger::ptr getRoot() const { return m_root; }
+
     private:
         std::map<std::string, Logger::ptr> m_loggers;
         Logger::ptr m_root;
     };
 
+    /**
+     * @brief 日志器管理器为单例
+     * */
     typedef liucxi::Singleton<LoggerManager> LoggerMgr;
 }
 #endif //LUWU_LOG_H

@@ -1,5 +1,5 @@
 //
-// Created by liucx on 2022/4/8.
+// Created by liucxi on 2022/4/8.
 //
 
 #ifndef LUWU_SINGLETON_H
@@ -7,6 +7,9 @@
 
 #include <memory>
 
+/**
+ * TODO 后续是否需要简化
+ * */
 namespace liucxi {
     template<typename T, typename X, int N>
     T &getInstance() {

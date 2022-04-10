@@ -11,16 +11,18 @@
 
 namespace liucxi {
 
-    /// 以下是 LogLevel 类实现
     std::string LogLevel::toString(LogLevel::Level level) {
         switch (level) {
-#define XX(name) case Level::name : return #name;
-            XX(DEBUG)
-            XX(INFO)
-            XX(WARN)
-            XX(ERROR)
-            XX(FATAL)
-#undef XX
+            case DEBUG:
+                return "DEBUG";
+            case INFO:
+                return "INFO";
+            case WARN:
+                return "WARN";
+            case ERROR:
+                return "ERROR";
+            case FATAL:
+                return "FATAL";
             default:
                 return "UNKNOWN";
         }
@@ -28,12 +30,6 @@ namespace liucxi {
 
     LogLevel::Level LogLevel::fromString(const std::string &str) {
 #define XX(level, v) if (str == #v) { return LogLevel::level; }
-        XX(DEBUG, debug)
-        XX(INFO, info)
-        XX(WARN, warn)
-        XX(ERROR, error)
-        XX(FATAL, fatal)
-
         XX(DEBUG, DEBUG)
         XX(INFO, INFO)
         XX(WARN, WARN)
@@ -43,21 +39,16 @@ namespace liucxi {
         return LogLevel::UNKNOWN;
     }
 
-    /// 以下是 LogEvent 类实现
     LogEvent::LogEvent(std::string logger_name, LogLevel::Level level, const char *file, int32_t line,
                        int64_t elapse, uint32_t thread_id, uint64_t fiber_id, time_t time,
                        std::string thread_name)
-            : m_loggerName(std::move(logger_name))
-            , m_level(level)
-            , m_file(file)
-            , m_line(line)
-            , m_elapse(elapse)
-            , m_threadId(thread_id)
-            , m_fiberId(fiber_id)
-            , m_time(time)
-            , m_threadName(std::move(thread_name)) {
+            : m_loggerName(std::move(logger_name)), m_level(level), m_file(file), m_line(line), m_elapse(elapse),
+              m_threadId(thread_id), m_fiberId(fiber_id), m_time(time), m_threadName(std::move(thread_name)) {
     }
 
+    /**
+     * TODO Understand
+     * */
     void LogEvent::printf(const char *fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
@@ -65,10 +56,10 @@ namespace liucxi {
         va_end(ap);
     }
 
-    /// 以下是 FormatItem 类所有子类的实现
     class MessageFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit MessageFormatItem(const std::string& str) { }
+        explicit MessageFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getContent();
         }
@@ -76,7 +67,8 @@ namespace liucxi {
 
     class LevelFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit LevelFormatItem(const std::string& str) {}
+        explicit LevelFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << LogLevel::toString(event->getLevel());
         }
@@ -84,7 +76,8 @@ namespace liucxi {
 
     class ElapseFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit ElapseFormatItem(const std::string& str) {}
+        explicit ElapseFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getElapse();
         }
@@ -92,7 +85,8 @@ namespace liucxi {
 
     class LoggerNameFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit LoggerNameFormatItem(const std::string& str) {}
+        explicit LoggerNameFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getLoggerName();
         }
@@ -100,7 +94,8 @@ namespace liucxi {
 
     class ThreadIdFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit ThreadIdFormatItem(const std::string& str) {}
+        explicit ThreadIdFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getThreadId();
         }
@@ -108,7 +103,8 @@ namespace liucxi {
 
     class FiberIdFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit FiberIdFormatItem(const std::string& str) {}
+        explicit FiberIdFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getFiberId();
         }
@@ -116,7 +112,8 @@ namespace liucxi {
 
     class ThreadNameFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit ThreadNameFormatItem(const std::string& str) {}
+        explicit ThreadNameFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getThreadName();
         }
@@ -125,26 +122,29 @@ namespace liucxi {
     class DateTimeFormatItem : public LogFormatter::FormatItem {
     public:
         explicit DateTimeFormatItem(std::string format = "%Y-%m-%d %H:%M:%S")
-            : m_format(std::move(format)) {
+                : m_format(std::move(format)) {
             if (m_format.empty()) {
                 m_format = "%Y-%m-%d %H:%M:%S";
             }
         }
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             struct tm tm{};
-            auto time = (time_t)event->getTime();
+            auto time = (time_t) event->getTime();
             localtime_r(&time, &tm);
             char buf[64];
             strftime(buf, sizeof(buf), m_format.c_str(), &tm);
             os << buf;
         }
+
     private:
         std::string m_format;
     };
 
     class FileNameFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit FileNameFormatItem(const std::string& str) {}
+        explicit FileNameFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getFile();
         }
@@ -152,7 +152,8 @@ namespace liucxi {
 
     class LineFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit LineFormatItem(const std::string& str) {}
+        explicit LineFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getLine();
         }
@@ -160,7 +161,8 @@ namespace liucxi {
 
     class NewLineFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit NewLineFormatItem(const std::string& str) {}
+        explicit NewLineFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << std::endl;
         }
@@ -168,7 +170,8 @@ namespace liucxi {
 
     class TabFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit TabFormatItem(const std::string& str) {}
+        explicit TabFormatItem(const std::string &str) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << "\t";
         }
@@ -176,17 +179,19 @@ namespace liucxi {
 
     class StringFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit StringFormatItem(std::string  str)
-            : m_string(std::move(str)) {}
+        explicit StringFormatItem(std::string str)
+                : m_string(std::move(str)) {}
+
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << m_string;
         }
+
     private:
         std::string m_string;
     };
 
     LogFormatter::LogFormatter(std::string pattern)
-        : m_pattern(std::move(pattern)) {
+            : m_pattern(std::move(pattern)) {
         init();
     }
 
@@ -249,7 +254,8 @@ namespace liucxi {
                     ++i;
                 }
                 if (m_pattern[i] != '}') {
-                    std::cout << "[ERROR] LogFormatter::init() " << "pattern: [" << m_pattern << "] '{' not closed" << std::endl;
+                    std::cout << "[ERROR] LogFormatter::init() " << "pattern: [" << m_pattern << "] '{' not closed"
+                              << std::endl;
                     error = true;
                     break; //不符合规范，不是 }
                 }
@@ -284,7 +290,8 @@ namespace liucxi {
                 XX(T, TabFormatItem)
 #undef XX
         };
-        for (const auto &v : patterns) {
+
+        for (const auto &v: patterns) {
             if (v.first == 0) {
                 m_items.push_back(FormatItem::ptr(new StringFormatItem(v.second)));
             } else if (v.second == "d") {
@@ -308,7 +315,7 @@ namespace liucxi {
         }
     }
 
-    std::string LogFormatter::format(const LogEvent::ptr& event) {
+    std::string LogFormatter::format(const LogEvent::ptr &event) {
         std::stringstream ss;
         for (const auto &i: m_items) {
             i->format(ss, event);
@@ -316,14 +323,13 @@ namespace liucxi {
         return ss.str();
     }
 
-    std::ostream &LogFormatter::format(std::ostream &os, const LogEvent::ptr& event) {
+    std::ostream &LogFormatter::format(std::ostream &os, const LogEvent::ptr &event) {
         for (const auto &i: m_items) {
             i->format(os, event);
         }
         return os;
     }
 
-    /// 以下是 LogAppender 子类实现
     void StdoutLogAppender::log(LogEvent::ptr event) {
         if (m_formatter) {
             m_formatter->format(std::cout, event);
@@ -333,8 +339,7 @@ namespace liucxi {
     }
 
     FileLogAppender::FileLogAppender(std::string filename)
-        : LogAppender(std::make_shared<LogFormatter>())
-        , m_filename(std::move(filename)) {
+            : LogAppender(std::make_shared<LogFormatter>()), m_filename(std::move(filename)) {
         reopen();
         if (m_reopenError) {
             std::cout << "reopen file " << m_filename << " error" << std::endl;
@@ -358,16 +363,15 @@ namespace liucxi {
         }
     }
 
-    /// 以下是 Logger 类实现
-    void Logger::addAppender(const LogAppender::ptr& appender) {
+    void Logger::addAppender(const LogAppender::ptr &appender) {
         m_appenderList.push_back(appender);
     }
 
-    void Logger::delAppender(const LogAppender::ptr& appender) {
+    void Logger::delAppender(const LogAppender::ptr &appender) {
         m_appenderList.remove(appender);
     }
 
-    void Logger::log(const LogEvent::ptr& event) {
+    void Logger::log(const LogEvent::ptr &event) {
         if (event->getLevel() >= m_level) {
             for (const auto &i: m_appenderList) {
                 i->log(event);
@@ -375,7 +379,6 @@ namespace liucxi {
         }
     }
 
-    /// 以下是 LogManager 类实现
     LoggerManager::LoggerManager() {
         m_root.reset(new Logger("root"));
         m_root->addAppender(LogAppender::ptr(new StdoutLogAppender));

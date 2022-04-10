@@ -12,17 +12,23 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <list>
 #include <yaml-cpp/yaml.h>
 #include <boost/lexical_cast.hpp>
 #include "log.h"
 
 namespace liucxi {
+
+    /**
+     * @brief 配置类基类，其核心功能需要子类实现
+     * */
     class ConfigVarBase {
     public:
         typedef std::shared_ptr<ConfigVarBase> ptr;
 
         explicit ConfigVarBase(std::string name, std::string describe = "")
                 : m_name(std::move(name)), m_describe(std::move(describe)) {
+            std::transform(m_name.begin(), m_name.end(), m_name.begin(), ::tolower);
         }
 
         virtual ~ConfigVarBase() = default;
@@ -36,8 +42,8 @@ namespace liucxi {
         virtual bool fromString(const std::string &val) = 0;
 
     protected:
-        std::string m_name;
-        std::string m_describe;
+        std::string m_name;         /// 配置名称
+        std::string m_describe;     /// 配置描述
     };
 
     template<typename From, typename To>
@@ -140,6 +146,9 @@ namespace liucxi {
     };
 
 
+    /**
+     * @brief 配置基类的实现类
+     * */
     template<typename T, typename FromStr = LexicalCast<std::string, T>
                         , typename ToStr = LexicalCast<T, std::string>>
     class ConfigVar : public ConfigVarBase {
@@ -150,10 +159,12 @@ namespace liucxi {
                 : ConfigVarBase(name, describe), m_val(default_val) {
         }
 
+        /**
+         * @brief 将 T 类型的值转为字符串
+         * */
         std::string toString() override {
             try {
-//                return boost::lexical_cast<std::string>(m_val);
-                return ToStr()(m_val);
+                return ToStr()(getValue());
             } catch (std::exception &e) {
                 LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "ConfigVar::toString exception" << e.what()
                                                 << "convert: " << typeid(m_val).name() << "to string";
@@ -161,9 +172,11 @@ namespace liucxi {
             return "";
         }
 
+        /**
+         * @brief 将字符串转为 T 类型的值
+         * */
         bool fromString(const std::string &val) override {
             try {
-//                m_val = boost::lexical_cast<T>(val);
                 setValue(FromStr()(val));
             } catch (std::exception &e) {
                 LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "ConfigVar::fromString exception" << e.what()
@@ -180,10 +193,16 @@ namespace liucxi {
         T m_val;
     };
 
+    /**
+     * @brief 配置管理类，单例模式
+     * */
     class Config {
     public:
         typedef std::map<std::string, ConfigVarBase::ptr> ConfigVarMap;
 
+        /**
+         * @brief 添加配置名和配置值
+         * */
         template<typename T>
         static typename ConfigVar<T>::ptr lookup(const std::string &name, const T &default_val,
                                                  const std::string &description = "") {
@@ -192,11 +211,20 @@ namespace liucxi {
                 LUWU_LOG_INFO(LUWU_LOG_ROOT()) << "lookup name = " << name << "exists";
                 return tmp;
             }
+
+            if (name.find_first_not_of("qwertyuiopasdfghjklzxcvbnm._0123456789") != std::string::npos) {
+                LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "lookup name invalid" << name;
+                throw std::invalid_argument(name);
+            }
+
             typename ConfigVar<T>::ptr v(new ConfigVar<T>(name, default_val, description));
             s_data[name] = v;
             return v;
         }
 
+        /**
+         * @brief 按照配置名查找配置值
+         * */
         template<typename T>
         static typename ConfigVar<T>::ptr lookup(const std::string &name) {
             auto it = s_data.find(name);
@@ -205,6 +233,10 @@ namespace liucxi {
             }
             return std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
         }
+
+        static void loadFromYaml(const YAML::Node& root);
+
+        static ConfigVarBase::ptr lookupBase(const std::string &name);
 
     private:
         static ConfigVarMap s_data;
