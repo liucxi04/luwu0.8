@@ -1,3 +1,23 @@
 system:
-  - port: 9090
-  - value: 1.5
+  port: 9090
+  value: 1.5
+  vector:
+    - 10
+    - 20
+  set: [20, 30, 30, 60]
+  map:
+    k: 2
+    v: 3
+
+class:
+  person:
+    name: liucxi
+    age: 18
+    sex: 1
+  vec_person:
+    - name: liucxi
+      age: 18
+      sex: 1
+    - name: aaa
+      age: 21
+      sex: 0
