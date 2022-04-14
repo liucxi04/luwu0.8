@@ -21,7 +21,7 @@
 
 
 /**
- * 获取 root 日志器，默认级别为 WARN
+ * 获取 root 日志器，默认级别为 INFO
  * */
 #define LUWU_LOG_ROOT() liucxi::LoggerMgr::getInstance().getRoot()
 
@@ -210,6 +210,8 @@ namespace liucxi {
 
         virtual ~LogAppender() = default;
 
+        virtual std::string toYamlString() = 0;
+
         /**
          * @brief 将日志事件进行输出，使用 m_formatter 或者 m_defaultFormatter，需要子类实现
          * */
@@ -239,6 +241,8 @@ namespace liucxi {
         };
 
         void log(LogEvent::ptr event) override;
+
+        std::string toYamlString() override;
     };
 
     /**
@@ -252,6 +256,7 @@ namespace liucxi {
 
         void log(LogEvent::ptr event) override;
 
+        std::string toYamlString() override;
         /**
          * @brief 重新打开文件，文件打开成功返回 true
          * */
@@ -271,10 +276,12 @@ namespace liucxi {
         typedef std::shared_ptr<Logger> ptr;
 
         explicit Logger(std::string name = "default")
-                : m_name(std::move(name)), m_level(LogLevel::WARN) {
+                : m_name(std::move(name)), m_level(LogLevel::DEBUG) {
         };
 
         void log(const LogEvent::ptr &event);
+
+        std::string toYamlString();
 
         const std::string &getName() const { return m_name; }
 
@@ -285,6 +292,8 @@ namespace liucxi {
         void addAppender(const LogAppender::ptr &appender);
 
         void delAppender(const LogAppender::ptr &appender);
+
+        void clearAppenders();
 
         uint64_t getCreateTime() const { return m_creatTime; }
 
@@ -323,11 +332,11 @@ namespace liucxi {
     public:
         LoggerManager();
 
-        void init();
-
         Logger::ptr getLogger(const std::string &name);
 
         Logger::ptr getRoot() const { return m_root; }
+
+        std::string toYamlString();
 
     private:
         std::map<std::string, Logger::ptr> m_loggers;

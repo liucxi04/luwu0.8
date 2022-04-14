@@ -2,12 +2,12 @@
 // Created by liucxi on 2022/4/6.
 //
 
-#include <map>
-#include <utility>
 #include <iostream>
 #include <functional>
 #include <cstdarg>
+#include <set>
 #include "log.h"
+#include "config.h"
 
 namespace liucxi {
 
@@ -338,6 +338,15 @@ namespace liucxi {
         }
     }
 
+    std::string StdoutLogAppender::toYamlString() {
+        YAML::Node node;
+        node["type"] = "StdoutLogAppender";
+        node["pattern"] = m_formatter->getPattern();
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
+    }
+
     FileLogAppender::FileLogAppender(std::string filename)
             : LogAppender(std::make_shared<LogFormatter>()), m_filename(std::move(filename)) {
         reopen();
@@ -363,12 +372,26 @@ namespace liucxi {
         }
     }
 
+    std::string FileLogAppender::toYamlString() {
+        YAML::Node node;
+        node["type"] = "FileLogAppender";
+        node["file"] = m_filename;
+        node["pattern"] = m_formatter ? m_formatter->getPattern() : m_defaultFormatter->getPattern();
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
+    }
+
     void Logger::addAppender(const LogAppender::ptr &appender) {
         m_appenderList.push_back(appender);
     }
 
     void Logger::delAppender(const LogAppender::ptr &appender) {
         m_appenderList.remove(appender);
+    }
+
+    void Logger::clearAppenders() {
+        m_appenderList.clear();
     }
 
     void Logger::log(const LogEvent::ptr &event) {
@@ -379,16 +402,32 @@ namespace liucxi {
         }
     }
 
+    std::string Logger::toYamlString() {
+        YAML::Node node;
+        node["name"] = m_name;
+        node["level"] = LogLevel::toString(m_level);
+        for (const auto &i : m_appenderList) {
+            node["appenders"].push_back(YAML::Load(i->toYamlString()));
+        }
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
+    }
+
     LoggerManager::LoggerManager() {
         m_root.reset(new Logger("root"));
         m_root->addAppender(LogAppender::ptr(new StdoutLogAppender));
         m_loggers[m_root->getName()] = m_root;
-        init();
     }
 
-    // TODO 从配置文件加载
-    void LoggerManager::init() {
-
+    std::string LoggerManager::toYamlString() {
+        YAML::Node node;
+        for (const auto &i : m_loggers) {
+            node.push_back(YAML::Load(i.second->toYamlString()));
+        }
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
     }
 
     Logger::ptr LoggerManager::getLogger(const std::string &name) {
@@ -401,4 +440,164 @@ namespace liucxi {
         m_loggers[name] = logger;
         return logger;
     }
+
+    /// 从配置文件中加载日志配置
+    /**
+     * @brief 日志输出器配置结构体
+     * */
+    struct LogAppenderDefine {
+        int type = 0; // 1 File, 2 Stdout
+        std::string pattern;
+        std::string file;
+
+        bool operator==(const LogAppenderDefine &oth) const {
+            return type == oth.type && pattern == oth.pattern && file == oth.file;
+        }
+    };
+
+    /**
+     * @brief 日志器配置结构体
+     * */
+    struct LoggerDefine {
+        std::string name;
+        LogLevel::Level level = LogLevel::UNKNOWN;
+        std::vector<LogAppenderDefine> appenders;
+
+        bool operator==(const LoggerDefine &oth) const {
+            return name == oth.name && level == oth.level && appenders == oth.appenders;
+        }
+
+        bool operator<(const LoggerDefine &oth) const {
+            return name < oth.name;
+        }
+
+        bool isValid() const {
+            return !name.empty();
+        }
+    };
+
+    template<>
+    class LexicalCast<std::string, LoggerDefine> {
+        LoggerDefine operator()(const std::string &v) {
+            YAML::Node node = YAML::Load(v);
+            LoggerDefine loggerDefine;
+
+            if (!node["name"].IsDefined()) {
+                std::cout << "log config error: name is null, " << node << std::endl;
+                throw std::logic_error("log config name is null");
+            }
+            loggerDefine.name = node["name"].as<std::string>();
+            loggerDefine.level = LogLevel::fromString(node["level"].IsDefined() ? node["level"].as<std::string>() : "");
+
+            if (node["appenders"].IsDefined()) {
+                for (const auto &appender : node["appenders"]) {
+                    if (!appender["type"].IsDefined()) {
+                        std::cout << "log config error: appender type is null, " << appender << std::endl;
+                        continue;
+                    }
+                    std::string type = appender["type"].as<std::string>();
+                    LogAppenderDefine logAppenderDefine;
+                    if (type == "FileLogAppender") {
+                        logAppenderDefine.type = 1;
+                        if (!appender["file"].IsDefined()) {
+                            std::cout << "log config error: appender file is null, " << appender << std::endl;
+                        }
+                        logAppenderDefine.file = appender["file"].as<std::string>();
+                        if (appender["pattern"].IsDefined()) {
+                            logAppenderDefine.pattern = appender["pattern"].as<std::string>();
+                        }
+                    } else if (type == "StdoutLogAppender") {
+                        logAppenderDefine.type = 2;
+                        if (appender["pattern"].IsDefined()) {
+                            logAppenderDefine.pattern = appender["pattern"].as<std::string>();
+                        }
+                    } else {
+                        std::cout << "log config error: appender type is invalid, " << appender << std::endl;
+                    }
+                    loggerDefine.appenders.push_back(logAppenderDefine);
+                }
+            }
+            return loggerDefine;
+        }
+    };
+
+    template<>
+    class LexicalCast<LoggerDefine, std::string> {
+        std::string operator()(const LoggerDefine &loggerDefine) {
+            YAML::Node node;
+            node["name"] = loggerDefine.name;
+            node["level"] = loggerDefine.level;
+            for (const auto &appender : loggerDefine.appenders) {
+                YAML::Node appenderNode;
+                if (appender.type == 1) {
+                    appenderNode["type"] = "FileLogAppender";
+                    appenderNode["file"] = appender.file;
+                } else if (appender.type == 2) {
+                    appenderNode["type"] = "StdoutLogAppender";
+                } else if (!appender.pattern.empty()) {
+                    appenderNode["pattern"] = appender.pattern;
+                }
+                node["appenders"].push_back(appenderNode);
+            }
+            std::stringstream ss;
+            ss << node;
+            return ss.str();
+        }
+    };
+
+    liucxi::ConfigVar<std::set<LoggerDefine>>::ptr g_logDefines =
+            liucxi::Config::lookup("logs", std::set<LoggerDefine>(), "logs config");
+
+    struct LogInit {
+        LogInit() {
+            g_logDefines->addListener(104, [](const std::set<LoggerDefine> &oldVal, const std::set<LoggerDefine> &newVal){
+                LUWU_LOG_INFO(LUWU_LOG_ROOT()) << "log config changed";
+                for (const auto & val : newVal) {
+                    auto it = oldVal.find(val);
+                    liucxi::Logger::ptr logger;
+                    if (it == oldVal.end()) {
+                        // 新增
+                        logger = LUWU_LOG_NAME(val.name);
+                    } else {
+                        if (!(val == *it)) {
+                            // 修改
+                            logger = LUWU_LOG_NAME(val.name);
+                        } else {
+                            continue;
+                        }
+                    }
+                    logger->setLevel(val.level);
+                    logger->clearAppenders();
+                    for (const auto &appender : val.appenders) {
+                        liucxi::LogAppender::ptr logAppender;
+                        if (appender.type == 1) {
+                            logAppender.reset(new liucxi::FileLogAppender(appender.file));
+                        } else if (appender.type == 2) {
+                            logAppender.reset(new liucxi::StdoutLogAppender);
+                        }
+                        if (!appender.pattern.empty()) {
+                            logAppender->setFormatter(std::make_shared<LogFormatter>(appender.pattern));
+                        } else {
+                            logAppender->setFormatter(std::make_shared<LogFormatter>());
+                        }
+                        logger->addAppender(logAppender);
+                    }
+                }
+
+                for (const auto &val : oldVal) {
+                    auto it = newVal.find(val);
+                    if (it == newVal.end()) {
+                        auto logger = LUWU_LOG_NAME(val.name);
+                        /**
+                         * @todo 日志等级还是有问题
+                         * */
+                        logger->setLevel(liucxi::LogLevel::UNKNOWN);
+                        logger->clearAppenders();
+                    }
+                }
+            });
+        }
+    };
+
+    static LogInit __log_init;
 }
