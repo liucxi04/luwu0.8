@@ -6,11 +6,11 @@
 
 namespace liucxi {
 
-    Config::ConfigVarMap Config::s_data;
+    // Config::ConfigVarMap Config::s_data;
 
     ConfigVarBase::ptr Config::lookupBase(const std::string &name) {
-        auto it = s_data.find(name);
-        return it == s_data.end() ? nullptr : it->second;
+        auto it = getData().find(name);
+        return it == getData().end() ? nullptr : it->second;
     }
 
     static void listAllMember(const std::string &prefix,

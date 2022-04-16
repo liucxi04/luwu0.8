@@ -478,6 +478,7 @@ namespace liucxi {
 
     template<>
     class LexicalCast<std::string, LoggerDefine> {
+    public:
         LoggerDefine operator()(const std::string &v) {
             YAML::Node node = YAML::Load(v);
             LoggerDefine loggerDefine;
@@ -523,10 +524,11 @@ namespace liucxi {
 
     template<>
     class LexicalCast<LoggerDefine, std::string> {
+    public:
         std::string operator()(const LoggerDefine &loggerDefine) {
             YAML::Node node;
             node["name"] = loggerDefine.name;
-            node["level"] = loggerDefine.level;
+            node["level"] = LogLevel::toString(loggerDefine.level);
             for (const auto &appender : loggerDefine.appenders) {
                 YAML::Node appenderNode;
                 if (appender.type == 1) {
@@ -588,9 +590,7 @@ namespace liucxi {
                     auto it = newVal.find(val);
                     if (it == newVal.end()) {
                         auto logger = LUWU_LOG_NAME(val.name);
-                        /**
-                         * @todo 日志等级还是有问题
-                         * */
+
                         logger->setLevel(liucxi::LogLevel::UNKNOWN);
                         logger->clearAppenders();
                     }

@@ -27,8 +27,8 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<ConfigVarBase> ptr;
 
-        explicit ConfigVarBase(std::string name, std::string describe = "")
-                : m_name(std::move(name)), m_describe(std::move(describe)) {
+        explicit ConfigVarBase(const std::string &name, const std::string &describe = "")
+                : m_name(name), m_describe(describe) {
             std::transform(m_name.begin(), m_name.end(), m_name.begin(), ::tolower);
         }
 
@@ -253,8 +253,8 @@ namespace liucxi {
                 LUWU_LOG_INFO(LUWU_LOG_ROOT()) << "lookup name = " << name << "exists";
                 return tmp;
             }*/
-            auto it = s_data.find(name);
-            if (it != s_data.end()) {
+            auto it = getData().find(name);
+            if (it != getData().end()) {
                 auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
                 if (tmp) {
                     return tmp;
@@ -262,6 +262,7 @@ namespace liucxi {
                     LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "lookup name = " << name << " exists but type not "
                                                     << typeid(T).name() << ", real type = " << it->second->getTypeName()
                                                     << " " << it->second->toString();
+                    return nullptr;
                 }
             }
             if (name.find_first_not_of("qwertyuiopasdfghjklzxcvbnm._0123456789") != std::string::npos) {
@@ -270,7 +271,7 @@ namespace liucxi {
             }
 
             typename ConfigVar<T>::ptr v(new ConfigVar<T>(name, default_val, description));
-            s_data[name] = v;
+            getData()[name] = v;
             return v;
         }
 
@@ -279,8 +280,8 @@ namespace liucxi {
          * */
         template<typename T>
         static typename ConfigVar<T>::ptr lookup(const std::string &name) {
-            auto it = s_data.find(name);
-            if (it == s_data.end()) {
+            auto it = getData().find(name);
+            if (it == getData().end()) {
                 return nullptr;
             }
             return std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
@@ -291,7 +292,11 @@ namespace liucxi {
         static ConfigVarBase::ptr lookupBase(const std::string &name);
 
     private:
-        static ConfigVarMap s_data;
+        // static ConfigVarMap s_data;
+        static ConfigVarMap &getData() {
+            static ConfigVarMap s_data;
+            return s_data;
+        }
     };
 
 }

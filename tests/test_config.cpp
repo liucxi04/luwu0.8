@@ -1,89 +1,70 @@
-//
-// Created by liucxi on 2022/4/9.
-//
+/**
+ * @file test_config.cc
+ * @brief 配置模块测试
+ * @version 0.1
+ * @date 2021-06-13
+ */
 
+#include "log.h"
 #include "config.h"
-#include <iostream>
-#include <yaml-cpp/yaml.h>
 
-using namespace liucxi;
+liucxi::Logger::ptr g_logger = LUWU_LOG_ROOT();
 
-ConfigVar<int>::ptr g_int = Config::lookup("system.port", (int)8080, "sys port");
+liucxi::ConfigVar<int>::ptr g_int =
+        liucxi::Config::lookup("global.int", (int)8080, "global int");
 
-ConfigVar<float>::ptr g_float = Config::lookup("system.port", (float)12.3f, "sys port");
-ConfigVar<std::vector<int>>::ptr g_vector = Config::lookup("system.vector",
-                                                           std::vector<int>{1,2},"system vector");
-ConfigVar<std::set<int>>::ptr g_set = Config::lookup("system.set",
-                                                           std::set<int>{1,2},"system set");
-ConfigVar<std::map<std::string, int>>::ptr g_map = Config::lookup("system.map",
-                                                           std::map<std::string , int>{{"k", 2}},"system map");
+liucxi::ConfigVar<float>::ptr g_float =
+        liucxi::Config::lookup("global.float", (float)10.2f, "global float");
 
-void test_config() {
-    std::cout << "g_int value: " << g_int->getValue() << std::endl;
-    std::cout << "g_float value: " << g_float->toString() << std::endl;
-    auto v = g_vector->getValue();
-    for (auto i : v) {
-        std::cout << "g_vector value: " << i << std::endl;
-    }
-    auto z = g_set->getValue();
-    for (auto i : z) {
-        std::cout << "g_set value: " << i << std::endl;
-    }
-    auto x = g_map->getValue();
-    for (const auto& i : x) {
-        std::cout << "g_map value: " << i.first << " " << i.second << std::endl;
-    }
+// 字符串需显示构造，不能传字符串常量
+liucxi::ConfigVar<std::string>::ptr g_string =
+        liucxi::Config::lookup("global.string", std::string("helloworld"), "global string");
 
+liucxi::ConfigVar<std::vector<int>>::ptr g_int_vec =
+        liucxi::Config::lookup("global.int_vec", std::vector<int>{1, 2, 3}, "global int vec");
 
-    YAML::Node root = YAML::LoadFile("/home/liucxi/Documents/luwu/tests/log.yml");
-//    std::cout << root << std::endl;
-    Config::loadFromYaml(root);
+liucxi::ConfigVar<std::set<int>>::ptr g_int_set =
+        liucxi::Config::lookup("global.int_set", std::set<int>{1, 2, 3}, "global int set");
 
-    std::cout << "g_int value: " << g_int->getValue() << std::endl;
-    std::cout << "g_float value: " << g_float->toString() << std::endl;
-    v = g_vector->getValue();
-    for (auto i : v) {
-        std::cout << "g_vector value: " << i << std::endl;
-    }
-    z = g_set->getValue();
-    for (auto i : z) {
-        std::cout << "g_set value: " << i << std::endl;
-    }
-    x = g_map->getValue();
-    for (const auto& i : x) {
-        std::cout << "g_map value: " << i.first << " " << i.second << std::endl;
-    }
-}
+liucxi::ConfigVar<std::map<std::string, int>>::ptr g_map_string2int =
+        liucxi::Config::lookup("global.map_string2int", std::map<std::string, int>
+                                                {{"key1", 1},{"key2", 2}}, "global map string2int");
 
+////////////////////////////////////////////////////////////
+// 自定义配置
 class Person {
 public:
+    Person() = default;;
     std::string m_name;
     int m_age = 0;
     bool m_sex = false;
+
     std::string toString() const {
         std::stringstream ss;
         ss << "[Person name=" << m_name
            << " age=" << m_age
            << " sex=" << m_sex
-           << "]";
+           <<"]";
         return ss.str();
     }
 
     bool operator==(const Person &oth) const {
-        return m_name == oth.m_name;
+        return m_name == oth.m_name && m_age == oth.m_age && m_sex == oth.m_sex;
     }
 };
 
+// 实现自定义配置的YAML序列化与反序列化，这部分要放在liucxi命名空间中
 namespace liucxi {
+
     template<>
     class LexicalCast<std::string, Person> {
     public:
-        Person operator() (const std::string &v) {
+        Person operator()(const std::string &v) {
             YAML::Node node = YAML::Load(v);
             Person p;
             p.m_name = node["name"].as<std::string>();
             p.m_age = node["age"].as<int>();
-            p.m_sex = node["sex"].as<int>();
+            p.m_sex = node["sex"].as<bool>();
             return p;
         }
     };
@@ -91,7 +72,7 @@ namespace liucxi {
     template<>
     class LexicalCast<Person, std::string> {
     public:
-        std::string operator() (const Person &p) {
+        std::string operator()(const Person &p) {
             YAML::Node node;
             node["name"] = p.m_name;
             node["age"] = p.m_age;
@@ -101,31 +82,96 @@ namespace liucxi {
             return ss.str();
         }
     };
-}
 
-ConfigVar<Person>::ptr g_person = Config::lookup("class.person", Person(), "class person");
+} // end namespace liucxi
 
-ConfigVar<std::vector<Person>>::ptr g_vec_person = Config::lookup("class.vec_person", std::vector<Person>(), "");
+liucxi::ConfigVar<Person>::ptr g_person =
+        liucxi::Config::lookup("class.person", Person(), "system person");
+
+liucxi::ConfigVar<std::map<std::string, Person>>::ptr g_person_map =
+        liucxi::Config::lookup("class.map", std::map<std::string, Person>(), "system person map");
+
+liucxi::ConfigVar<std::map<std::string, std::vector<Person>>>::ptr g_person_vec_map =
+        liucxi::Config::lookup("class.vec_map", std::map<std::string, std::vector<Person>>(),
+                               "system vec map");
 
 void test_class() {
+    static uint64_t id = 14;
 
-    g_person->addListener(10, [](const Person &old_val, const Person &new_val){
-        std::cout << old_val.toString() << new_val.toString() << std::endl;
-    });
-    std::cout << "g_person value: " << g_person->toString() << std::endl;
-    std::cout << "g_vec_person value: " << g_vec_person->toString() << std::endl;
+    if(!g_person->getListener(id)) {
+        g_person->addListener(14, [](const Person &old_value, const Person &new_value){
+            LUWU_LOG_INFO(g_logger) << "g_person value change, old value:" << old_value.toString()
+                                     << ", new value:" << new_value.toString();
+        });
+    }
 
-    YAML::Node root = YAML::LoadFile("/home/liucxi/Documents/luwu/tests/log.yml");
-    Config::loadFromYaml(root);
+    LUWU_LOG_INFO(g_logger) << g_person->getValue().toString();
 
-    std::cout << "g_person value: " << g_person->toString() << std::endl;
-    std::cout << "g_vec_person value: " << g_vec_person->toString() << std::endl;
+    for (const auto &i : g_person_map->getValue()) {
+        LUWU_LOG_INFO(g_logger) << i.first << ":" << i.second.toString();
+    }
 
+    for(const auto &i : g_person_vec_map->getValue()) {
+        LUWU_LOG_INFO(g_logger) << i.first;
+        for(const auto &j : i.second) {
+            LUWU_LOG_INFO(g_logger) << j.toString();
+        }
+    }
 }
-int main(int argc, char *argv[]) {
 
-//     test_config();
+////////////////////////////////////////////////////////////
+
+template<class T>
+std::string formatArray(const T &v) {
+    std::stringstream ss;
+    ss << "[";
+    for(const auto &i:v) {
+        ss << " " << i;
+    }
+    ss << " ]";
+    return ss.str();
+}
+
+template<class T>
+std::string formatMap(const T &m) {
+    std::stringstream ss;
+    ss << "{";
+    for(const auto &i:m) {
+        ss << " {" << i.first << ":" << i.second << "}";
+    }
+    ss << " }";
+    return ss.str();
+}
+
+void test_config() {
+    LUWU_LOG_INFO(g_logger) << "g_int value: " << g_int->getValue();
+    LUWU_LOG_INFO(g_logger) << "g_float value: " << g_float->getValue();
+    LUWU_LOG_INFO(g_logger) << "g_string value: " << g_string->getValue();
+    LUWU_LOG_INFO(g_logger) << "g_int_vec value: " << formatArray<std::vector<int>>(g_int_vec->getValue());
+    LUWU_LOG_INFO(g_logger) << "g_int_set value: " << formatArray<std::set<int>>(g_int_set->getValue());
+    LUWU_LOG_INFO(g_logger) << "g_int_map value: " << formatMap<std::map<std::string, int>>(g_map_string2int->getValue());
+    // 自定义配置项
     test_class();
+}
+
+int main(int argc, char *argv[]) {
+    // 设置g_int的配置变更回调函数
+    g_int->addListener(12, [](const int &old_value, const int &new_value) {
+        LUWU_LOG_INFO(g_logger) << "g_int value changed, old_value: " << old_value << ", new_value: " << new_value;
+    });
+
+    LUWU_LOG_INFO(g_logger) << "before============================";
+
+    test_config();
+
+    YAML::Node node = YAML::LoadFile("../conf/test_config.yml");
+    liucxi::Config::loadFromYaml(node);
+    YAML::Node node1 = YAML::LoadFile("../conf/log.yml");
+    liucxi::Config::loadFromYaml(node1);
+
+    LUWU_LOG_INFO(g_logger) << "after============================";
+
+    test_config();
+
     return 0;
 }
-
