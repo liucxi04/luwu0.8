@@ -10,5 +10,6 @@
 #include "thread.h"
 #include "utils.h"
 #include "singleton.h"
+#include "mutex.h"
 
 #endif //LUWU_LUWU_H

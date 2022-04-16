@@ -7,7 +7,7 @@
 liucxi::Logger::ptr g_logger = LUWU_LOG_ROOT();
 
 int count = 0;
-
+liucxi::Mutex s_mutex;
 
 void func1(void *arg) {
     LUWU_LOG_INFO(g_logger) << "name:" << liucxi::Thread::GetName()
@@ -17,11 +17,13 @@ void func1(void *arg) {
                              << " this.id:" << liucxi::Thread::GetThis()->getId();
     LUWU_LOG_INFO(g_logger) << "arg: " << *(int*)arg;
     for(int i = 0; i < 10000; i++) {
+        liucxi::Mutex::Lock lock(s_mutex);
         ++count;
     }
 }
 
 int main(int argc, char *argv[]) {
+
     std::vector<liucxi::Thread::ptr> thrs;
     int arg = 123456;
     for(int i = 0; i < 3; i++) {

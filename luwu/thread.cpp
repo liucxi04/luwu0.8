@@ -25,6 +25,7 @@ namespace liucxi {
             LUWU_LOG_ERROR(g_logger) << "pthread_create fail, rt=" << rt << " name=" << name;
             throw std::logic_error("pthread_create error");
         }
+        m_sem.wait();
     }
 
     Thread::~Thread() {
@@ -72,6 +73,7 @@ namespace liucxi {
         std::function<void()> callback;
         callback.swap(thread->m_callback);
 
+        thread->m_sem.notify();
         callback();
         return nullptr;
     }

@@ -8,6 +8,7 @@
 #include <memory>
 #include <functional>
 #include "noncopyable.h"
+#include "mutex.h"
 
 namespace liucxi {
     class Thread : Noncopyable {
@@ -38,6 +39,8 @@ namespace liucxi {
         pthread_t m_thread = 0;
         std::function<void()> m_callback;
         std::string m_name;
+
+        Semaphore m_sem;
     };
 }
 
