@@ -27,8 +27,8 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<ConfigVarBase> ptr;
 
-        explicit ConfigVarBase(const std::string &name, const std::string &describe = "")
-                : m_name(name), m_describe(describe) {
+        explicit ConfigVarBase(std::string name, std::string describe = "")
+                : m_name(std::move(name)), m_describe(std::move(describe)) {
             std::transform(m_name.begin(), m_name.end(), m_name.begin(), ::tolower);
         }
 
@@ -61,7 +61,7 @@ namespace liucxi {
     };
 
     /**
-     * 模板偏特化，string to vector<T>，下同
+     * 模板偏特化，string to vector<T>
      * */
     template<typename To>
     class LexicalCast<std::string, std::vector<To>> {
@@ -79,6 +79,9 @@ namespace liucxi {
         }
     };
 
+    /**
+     * 模板偏特化，vector<T> to string
+     * */
     template<typename From>
     class LexicalCast<std::vector<From>, std::string> {
     public:
@@ -93,6 +96,9 @@ namespace liucxi {
         }
     };
 
+    /**
+     * 模板偏特化，string to set<T>
+     * */
     template<typename To>
     class LexicalCast<std::string, std::set<To>> {
     public:
@@ -109,6 +115,9 @@ namespace liucxi {
         }
     };
 
+    /**
+     * 模板偏特化，set<T> to string
+     * */
     template<typename From>
     class LexicalCast<std::set<From>, std::string> {
     public:
@@ -123,6 +132,9 @@ namespace liucxi {
         }
     };
 
+    /**
+     * 模板偏特化，string to map<string, T>
+     * */
     template<typename To>
     class LexicalCast<std::string, std::map<std::string, To>> {
     public:
@@ -140,6 +152,9 @@ namespace liucxi {
         }
     };
 
+    /**
+     * 模板偏特化，map<string, T> to string
+     * */
     template<typename From>
     class LexicalCast<std::map<std::string, From>, std::string> {
     public:
@@ -162,6 +177,9 @@ namespace liucxi {
     class ConfigVar : public ConfigVarBase {
     public:
         typedef std::shared_ptr<ConfigVar<T>> ptr;
+        /**
+         * @brief 配置对象的监听函数，当值发生改变时调用
+         * */
         typedef std::function<void( const T &old_value, const T &new_value)>  on_change;
 
         ConfigVar(const std::string &name, const T &default_val, const std::string &describe)
@@ -292,6 +310,9 @@ namespace liucxi {
         static ConfigVarBase::ptr lookupBase(const std::string &name);
 
     private:
+        /**
+         * @note 在此处定义静态 map，在 cpp 文件实现会出错，所以使用了下面这种方式，具体为什么可以等待实验
+         * */
         // static ConfigVarMap s_data;
         static ConfigVarMap &getData() {
             static ConfigVarMap s_data;
