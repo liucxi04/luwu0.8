@@ -26,9 +26,9 @@ namespace liucxi {
     template<typename T, typename X = void, int N = 0>
     class Singleton {
     public:
-        static T &getInstance() {
+        static T *getInstance() {
             static T v;
-            return v;
+            return &v;
         }
     };
 

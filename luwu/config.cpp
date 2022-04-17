@@ -9,6 +9,7 @@ namespace liucxi {
     // Config::ConfigVarMap Config::s_data;
 
     ConfigVarBase::ptr Config::lookupBase(const std::string &name) {
+        RWMutexType::ReadLock lock(GetMutex());
         auto it = getData().find(name);
         return it == getData().end() ? nullptr : it->second;
     }
@@ -61,6 +62,14 @@ namespace liucxi {
                     var->fromString(ss.str());
                 }
             }
+        }
+    }
+
+    void Config::visit(const std::function<void(ConfigVarBase::ptr)>& callback) {
+        RWMutexType::ReadLock lock(GetMutex());
+        ConfigVarMap &m = getData();
+        for (const auto &i : m) {
+            callback(i.second);
         }
     }
 }

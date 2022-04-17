@@ -17,6 +17,7 @@
 #include <yaml-cpp/yaml.h>
 #include <boost/lexical_cast.hpp>
 #include "log.h"
+#include "mutex.h"
 
 namespace liucxi {
 
@@ -177,6 +178,7 @@ namespace liucxi {
     class ConfigVar : public ConfigVarBase {
     public:
         typedef std::shared_ptr<ConfigVar<T>> ptr;
+        typedef RWMutex RWMutexType;
         /**
          * @brief 配置对象的监听函数，当值发生改变时调用
          * */
@@ -212,39 +214,54 @@ namespace liucxi {
             return false;
         }
 
-        T getValue() const { return m_val; }
+        T getValue() {
+            RWMutexType::ReadLock lock(m_mutex);
+            return m_val;
+        }
 
         void setValue(const T &val) {
-            if (val == m_val) {
-                return;
+            {
+                RWMutexType::ReadLock lock(m_mutex);
+                if (val == m_val) {
+                    return;
+                }
+                for (auto &i : m_callbacks) {
+                    i.second(m_val, val);
+                }
             }
-            for (auto &i : m_callbacks) {
-                i.second(m_val, val);
-            }
+            RWMutexType::WriteLock lock(m_mutex);
             m_val = val;
         }
 
         std::string getTypeName() const override { return typeid(T).name(); }
 
-        void addListener(uint64_t key, on_change callback) {
-            m_callbacks[key] = callback;
+        uint64_t addListener(on_change callback) {
+            static uint64_t s_callbackId = 0;
+            RWMutexType::WriteLock lock(m_mutex);
+            ++s_callbackId;
+            m_callbacks[s_callbackId] = callback;
+            return s_callbackId;
         }
 
         void delListener(uint64_t key) {
+            RWMutexType::WriteLock lock(m_mutex);
             m_callbacks.erase(key);
         }
 
         on_change getListener(uint64_t key) {
+            RWMutexType::ReadLock lock(m_mutex);
             auto it = m_callbacks.find(key);
             return it == m_callbacks.end() ? nullptr : it->second;
         }
 
         void clearListener() {
+            RWMutexType::WriteLock lock(m_mutex);
             m_callbacks.clear();
         }
 
     private:
         T m_val;
+        RWMutexType m_mutex;
         /**
          * @brief 变更回调函数
          * */
@@ -257,6 +274,7 @@ namespace liucxi {
     class Config {
     public:
         typedef std::map<std::string, ConfigVarBase::ptr> ConfigVarMap;
+        typedef RWMutex RWMutexType;
 
         /**
          * @brief 添加配置名和配置值
@@ -271,6 +289,7 @@ namespace liucxi {
                 LUWU_LOG_INFO(LUWU_LOG_ROOT()) << "lookup name = " << name << "exists";
                 return tmp;
             }*/
+            RWMutexType::WriteLock lock(GetMutex());
             auto it = getData().find(name);
             if (it != getData().end()) {
                 auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
@@ -298,6 +317,7 @@ namespace liucxi {
          * */
         template<typename T>
         static typename ConfigVar<T>::ptr lookup(const std::string &name) {
+            RWMutexType::WriteLock lock(GetMutex());
             auto it = getData().find(name);
             if (it == getData().end()) {
                 return nullptr;
@@ -309,6 +329,10 @@ namespace liucxi {
 
         static ConfigVarBase::ptr lookupBase(const std::string &name);
 
+        // static void loadFromConfDir(const std::string &path, bool force = false);
+
+        static void visit(const std::function<void(ConfigVarBase::ptr)>& callback);
+
     private:
         /**
          * @note 在此处定义静态 map，在 cpp 文件实现会出错，所以使用了下面这种方式，具体为什么可以等待实验
@@ -317,6 +341,11 @@ namespace liucxi {
         static ConfigVarMap &getData() {
             static ConfigVarMap s_data;
             return s_data;
+        }
+
+        static RWMutexType &GetMutex() {
+            static RWMutexType s_mutex;
+            return s_mutex;
         }
     };
 

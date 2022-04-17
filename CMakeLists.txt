@@ -18,7 +18,7 @@ add_library(luwu SHARED ${SRC})
 
 add_executable(log tests/test_log.cpp)
 add_dependencies(log luwu)
-target_link_libraries(log luwu ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(log luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
 
 add_executable(config tests/test_config.cpp)
 add_dependencies(config luwu)

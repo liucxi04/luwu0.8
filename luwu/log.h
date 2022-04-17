@@ -17,21 +17,22 @@
 #include <utility>
 #include <vector>
 #include "utils.h"
+#include "mutex.h"
 #include "singleton.h"
 
 
 /**
- * 获取 root 日志器，默认级别为 INFO
+ * @brief 获取 root 日志器，默认级别为 INFO
  * */
-#define LUWU_LOG_ROOT() liucxi::LoggerMgr::getInstance().getRoot()
+#define LUWU_LOG_ROOT() liucxi::LoggerMgr::getInstance()->getRoot()
 
 /**
- * 获取指定名称的日志器
+ * @brief 获取指定名称的日志器
  * */
-#define LUWU_LOG_NAME(name) liucxi::LoggerMgr::getInstance().getLogger(name)
+#define LUWU_LOG_NAME(name) liucxi::LoggerMgr::getInstance()->getLogger(name)
 
 /**
- * 流式输出
+ * @brief 流式输出
  * */
 #define LUWU_LOG_LEVEL(logger, level) \
     if (level >= logger->getLevel())  \
@@ -47,7 +48,7 @@
 #define LUWU_LOG_FATAL(logger) LUWU_LOG_LEVEL(logger, liucxi::LogLevel::FATAL)
 
 /**
- * fmt 输出
+ * @brief fmt 输出
  * */
 #define LUWU_LOG_FMT_LEVEL(logger, level, fmt, ...) \
     if(level >= logger->getLevel())                 \
@@ -203,6 +204,7 @@ namespace liucxi {
     class LogAppender {
     public:
         typedef std::shared_ptr<LogAppender> ptr;
+        typedef Spinlock MutexType;
 
         explicit LogAppender(LogFormatter::ptr formatter)
                 : m_defaultFormatter(std::move(formatter)) {
@@ -217,11 +219,18 @@ namespace liucxi {
          * */
         virtual void log(LogEvent::ptr event) = 0;
 
-        void setFormatter(const LogFormatter::ptr &formatter) { m_formatter = formatter; };
+        void setFormatter(const LogFormatter::ptr &formatter) {
+            MutexType::Lock lock(m_mutex);
+            m_formatter = formatter;
+        }
 
-        LogFormatter::ptr getFormatter() const { return m_formatter ? m_formatter : m_defaultFormatter; }
+        LogFormatter::ptr getFormatter() {
+            MutexType::Lock lock(m_mutex);
+            return m_formatter ? m_formatter : m_defaultFormatter;
+        }
 
     protected:
+        MutexType m_mutex;
         LogFormatter::ptr m_formatter;        /// 用户指定的格式
         LogFormatter::ptr m_defaultFormatter; /// 默认的格式
     };
@@ -266,6 +275,7 @@ namespace liucxi {
         bool m_reopenError = false;
         std::string m_filename;
         std::ofstream m_filestream;
+        uint64_t m_lastTime = 0;        /// 文件上次打开时间
     };
 
     /**
@@ -274,6 +284,7 @@ namespace liucxi {
     class Logger {
     public:
         typedef std::shared_ptr<Logger> ptr;
+        typedef Spinlock MutexType;
 
         explicit Logger(std::string name = "default")
                 : m_name(std::move(name)), m_level(LogLevel::DEBUG) {
@@ -298,6 +309,7 @@ namespace liucxi {
         uint64_t getCreateTime() const { return m_creatTime; }
 
     private:
+        MutexType m_mutex;
         std::string m_name;                                 /// 日志名称
         LogLevel::Level m_level;                            /// 日志级别
         std::list<LogAppender::ptr> m_appenderList;         /// 输出地列表
@@ -330,6 +342,7 @@ namespace liucxi {
      * */
     class LoggerManager {
     public:
+        typedef Spinlock MutexType;
         LoggerManager();
 
         Logger::ptr getLogger(const std::string &name);
@@ -339,6 +352,7 @@ namespace liucxi {
         std::string toYamlString();
 
     private:
+        MutexType m_mutex;
         std::map<std::string, Logger::ptr> m_loggers;
         Logger::ptr m_root;
     };

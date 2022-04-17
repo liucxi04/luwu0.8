@@ -339,6 +339,7 @@ namespace liucxi {
     }
 
     std::string StdoutLogAppender::toYamlString() {
+        MutexType::Lock lock(m_mutex);
         YAML::Node node;
         node["type"] = "StdoutLogAppender";
         node["pattern"] = m_formatter->getPattern();
@@ -356,6 +357,7 @@ namespace liucxi {
     }
 
     bool FileLogAppender::reopen() {
+        MutexType::Lock lock(m_mutex);
         if (m_filestream) {
             m_filestream.close();
         }
@@ -364,7 +366,22 @@ namespace liucxi {
         return !m_reopenError;
     }
 
+    /**
+     * @note 如果一个日志事件距离上次写日志超过 3 秒，那就重新打开一次日志文件
+     * */
     void FileLogAppender::log(LogEvent::ptr event) {
+        uint64_t now = event->getTime();
+        if (now >= m_lastTime + 3) {
+            reopen();
+            if (m_reopenError) {
+                std::cout << "reopen file " << m_filename << " error" << std::endl;
+            }
+            m_lastTime = now;
+        }
+        if (m_reopenError) {
+            return;
+        }
+        MutexType::Lock lock(m_mutex);
         if (m_formatter) {
             m_formatter->format(m_filestream, event);
         } else {
@@ -373,6 +390,7 @@ namespace liucxi {
     }
 
     std::string FileLogAppender::toYamlString() {
+        MutexType::Lock lock(m_mutex);
         YAML::Node node;
         node["type"] = "FileLogAppender";
         node["file"] = m_filename;
@@ -383,14 +401,17 @@ namespace liucxi {
     }
 
     void Logger::addAppender(const LogAppender::ptr &appender) {
+        MutexType::Lock lock(m_mutex);
         m_appenderList.push_back(appender);
     }
 
     void Logger::delAppender(const LogAppender::ptr &appender) {
+        MutexType::Lock lock(m_mutex);
         m_appenderList.remove(appender);
     }
 
     void Logger::clearAppenders() {
+        MutexType::Lock lock(m_mutex);
         m_appenderList.clear();
     }
 
@@ -403,6 +424,7 @@ namespace liucxi {
     }
 
     std::string Logger::toYamlString() {
+        MutexType::Lock lock(m_mutex);
         YAML::Node node;
         node["name"] = m_name;
         node["level"] = LogLevel::toString(m_level);
@@ -421,6 +443,7 @@ namespace liucxi {
     }
 
     std::string LoggerManager::toYamlString() {
+        MutexType::Lock lock(m_mutex);
         YAML::Node node;
         for (const auto &i : m_loggers) {
             node.push_back(YAML::Load(i.second->toYamlString()));
@@ -431,6 +454,7 @@ namespace liucxi {
     }
 
     Logger::ptr LoggerManager::getLogger(const std::string &name) {
+        MutexType::Lock lock(m_mutex);
         auto it = m_loggers.find(name);
         if (it != m_loggers.end()) {
             return it->second;
@@ -552,7 +576,7 @@ namespace liucxi {
 
     struct LogInit {
         LogInit() {
-            g_logDefines->addListener(104, [](const std::set<LoggerDefine> &oldVal, const std::set<LoggerDefine> &newVal){
+            g_logDefines->addListener([](const std::set<LoggerDefine> &oldVal, const std::set<LoggerDefine> &newVal){
                 LUWU_LOG_INFO(LUWU_LOG_ROOT()) << "log config changed";
                 for (const auto & val : newVal) {
                     auto it = oldVal.find(val);

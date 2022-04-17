@@ -99,7 +99,7 @@ void test_class() {
     static uint64_t id = 14;
 
     if(!g_person->getListener(id)) {
-        g_person->addListener(14, [](const Person &old_value, const Person &new_value){
+        g_person->addListener([](const Person &old_value, const Person &new_value){
             LUWU_LOG_INFO(g_logger) << "g_person value change, old value:" << old_value.toString()
                                      << ", new value:" << new_value.toString();
         });
@@ -156,7 +156,7 @@ void test_config() {
 
 int main(int argc, char *argv[]) {
     // 设置g_int的配置变更回调函数
-    g_int->addListener(12, [](const int &old_value, const int &new_value) {
+    g_int->addListener([](const int &old_value, const int &new_value) {
         LUWU_LOG_INFO(g_logger) << "g_int value changed, old_value: " << old_value << ", new_value: " << new_value;
     });
 

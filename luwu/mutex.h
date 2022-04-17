@@ -6,8 +6,13 @@
 #define LUWU_MUTEX_H
 
 #include <semaphore.h>
+#include <atomic>
+#include "noncopyable.h"
 
 namespace liucxi {
+    /**
+     * @brief 信号量
+     * */
     class Semaphore : Noncopyable {
     public:
         explicit Semaphore(uint32_t count = 0) {
@@ -36,6 +41,9 @@ namespace liucxi {
         sem_t m_sem{};
     };
 
+    /**
+     * @brief 局部锁
+     * */
     template<typename T>
     class ScopedLockImpl {
     public:
@@ -68,6 +76,9 @@ namespace liucxi {
         bool m_locked = false;
     };
 
+    /**
+     * @brief 局部读锁
+     * */
     template<typename T>
     class ReadScopedLockImpl {
     public:
@@ -100,6 +111,9 @@ namespace liucxi {
         bool m_locked = false;
     };
 
+    /**
+     * @brief 局部写锁
+     * */
     template<typename T>
     class WriteScopedLockImpl {
     public:
@@ -132,6 +146,9 @@ namespace liucxi {
         bool m_locked = false;
     };
 
+    /**
+     * @brief 互斥量
+     * */
     class Mutex : Noncopyable {
     public:
         typedef ScopedLockImpl<Mutex> Lock;
@@ -156,6 +173,9 @@ namespace liucxi {
         pthread_mutex_t m_mutex{};
     };
 
+    /**
+     * @brief 空锁 用于调试
+     * */
     class NullMutex : Noncopyable {
         typedef ScopedLockImpl<NullMutex> Lock;
 
@@ -168,6 +188,9 @@ namespace liucxi {
         void unlock() {}
     };
 
+    /**
+     * @brief 读写互斥量
+     * */
     class RWMutex : Noncopyable {
     public:
         typedef ReadScopedLockImpl<RWMutex> ReadLock;
@@ -189,10 +212,17 @@ namespace liucxi {
             pthread_rwlock_wrlock(&m_lock);
         }
 
+        void unlock() {
+            pthread_rwlock_unlock(&m_lock);
+        }
+
     private:
         pthread_rwlock_t m_lock{};
     };
 
+    /**
+     * @brief 空读写互斥量
+     * */
     class NullRWMutex : Noncopyable {
     public:
         typedef ReadScopedLockImpl<NullRWMutex> ReadLock;
@@ -207,6 +237,9 @@ namespace liucxi {
         void wrlock() {}
     };
 
+    /**
+     * @brief 自旋锁
+     * */
     class Spinlock : Noncopyable {
     public:
         typedef ScopedLockImpl<Spinlock> Lock;
@@ -231,24 +264,27 @@ namespace liucxi {
         pthread_spinlock_t m_mutex{};
     };
 
-//    class CASLock : Noncopyable {
-//    public:
-//        typedef ScopedLockImpl<CASLock> Lock;
-//        CASLock() {
-//            m_mutex.clear();
-//        }
-//
-//        ~CASLock() = default;
-//
-//        void lock() {
-//            while (std::atomic_flag_test_and_set_explicit(&m_mutex, std::memory_order_acquire));
-//        }
-//
-//        void unlock() {
-//            std::atomic_flag_clear_explicit(&m_mutex, std::memory_order_release);
-//        }
-//    private:
-//        volatile std::atomic_flag m_mutex{};
-//    };
+    /**
+     * @brief 原子锁
+     * */
+    class CASLock : Noncopyable {
+    public:
+        typedef ScopedLockImpl<CASLock> Lock;
+        CASLock() {
+            m_mutex.clear();
+        }
+
+        ~CASLock() = default;
+
+        void lock() {
+            while (std::atomic_flag_test_and_set_explicit(&m_mutex, std::memory_order_acquire));
+        }
+
+        void unlock() {
+            std::atomic_flag_clear_explicit(&m_mutex, std::memory_order_release);
+        }
+    private:
+        volatile std::atomic_flag m_mutex{};
+    };
 }
 #endif //LUWU_MUTEX_H
