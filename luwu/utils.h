@@ -7,6 +7,7 @@
 
 #include <sys/types.h>
 #include <string>
+#include <vector>
 
 namespace liucxi {
 
@@ -19,6 +20,10 @@ namespace liucxi {
     std::string getThreadName();
 
     void setThreadName(const std::string &name);
+
+    void Backtrace(std::vector<std::string> &bt, int size = 64, int skip = 1);
+
+    std::string BacktraceToString(int size = 64, int skip = 1, const std::string &prefix="");
 }
 
 

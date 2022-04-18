@@ -13,7 +13,8 @@ set(SRC
         luwu/log.cpp
         luwu/utils.cpp
         luwu/config.cpp
-        luwu/thread.cpp)
+        luwu/thread.cpp
+        luwu/fiber.cpp)
 add_library(luwu SHARED ${SRC})
 
 add_executable(log tests/test_log.cpp)
@@ -27,3 +28,11 @@ target_link_libraries(config luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} 
 add_executable(thread tests/test_thread.cpp)
 add_dependencies(thread luwu)
 target_link_libraries(thread luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+
+add_executable(utils tests/test_utils.cpp)
+add_dependencies(utils luwu)
+target_link_libraries(utils luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+
+add_executable(fiber tests/test_fiber.cpp)
+add_dependencies(fiber luwu)
+target_link_libraries(fiber luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)

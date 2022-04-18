@@ -11,5 +11,7 @@
 #include "utils.h"
 #include "singleton.h"
 #include "mutex.h"
+#include "macro.h"
+#include "fiber.h"
 
 #endif //LUWU_LUWU_H
