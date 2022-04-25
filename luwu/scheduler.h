@@ -83,6 +83,8 @@ namespace liucxi {
          * */
         void setThis();
 
+        bool hasIdleThreads() { return m_idleThreadCount > 0; }
+
     public:
         /**
          * @brief 获取当前线程的调度器指针

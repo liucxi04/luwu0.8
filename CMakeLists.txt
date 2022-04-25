@@ -15,7 +15,8 @@ set(SRC
         luwu/config.cpp
         luwu/thread.cpp
         luwu/fiber.cpp
-        luwu/scheduler.cpp)
+        luwu/scheduler.cpp
+        luwu/iomanager.cpp)
 add_library(luwu SHARED ${SRC})
 
 add_executable(log tests/test_log.cpp)
