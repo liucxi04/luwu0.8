@@ -6,6 +6,7 @@
 #define LUWU_UTILS_H
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <string>
 #include <vector>
 
@@ -24,6 +25,10 @@ namespace liucxi {
     void Backtrace(std::vector<std::string> &bt, int size = 64, int skip = 1);
 
     std::string BacktraceToString(int size = 64, int skip = 1, const std::string &prefix="");
+
+    uint64_t GetCurrentMS();
+
+    uint64_t GetCurrentUS();
 }
 
 

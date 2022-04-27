@@ -36,7 +36,7 @@ namespace liucxi {
     void IOManager::FdContext::triggerEvent(IOManager::Event e) {
         LUWU_ASSERT(event & e)
 
-        event = (Event)(event & ~e);
+        event = (Event) (event & ~e);
         EventContext &ctx = getEventContext(e);
         if (ctx.cb) {
             ctx.scheduler->scheduler(ctx.cb);
@@ -47,7 +47,7 @@ namespace liucxi {
     }
 
     IOManager::IOManager(size_t threads, bool use_caller, std::string name)
-        : Scheduler(threads, use_caller, std::move(name)){
+            : Scheduler(threads, use_caller, std::move(name)) {
         m_epfd = epoll_create(5000);
         LUWU_ASSERT(m_epfd > 0)
 
@@ -75,7 +75,7 @@ namespace liucxi {
         for (size_t i = 0; i < m_fdContexts.size(); ++i) {
             if (!m_fdContexts[i]) {
                 m_fdContexts[i] = new FdContext;
-                m_fdContexts[i]->fd = (int)i;
+                m_fdContexts[i]->fd = (int) i;
             }
         }
     }
@@ -86,7 +86,7 @@ namespace liucxi {
         close(m_tickleFds[0]);
         close(m_tickleFds[1]);
 
-        for (auto &context : m_fdContexts) {
+        for (auto &context: m_fdContexts) {
             delete context;
         }
     }
@@ -94,7 +94,7 @@ namespace liucxi {
     bool IOManager::addEvent(int fd, Event event, std::function<void()> cb) {
         FdContext *fdContext = nullptr;
         RWMutexType::ReadLock lock(m_mutex);
-        if ((int)m_fdContexts.size() > fd) {
+        if ((int) m_fdContexts.size() > fd) {
             fdContext = m_fdContexts[fd];
             lock.unlock();
         } else {
@@ -107,9 +107,9 @@ namespace liucxi {
         FdContext::MutexType::Lock lock1(fdContext->mutex);
         if (fdContext->event & event) {
             LUWU_LOG_ERROR(g_logger) << "addEvent assert fd=" << fd
-                                     << " event=" << (EPOLL_EVENTS)event
-                                     << " fd_ctx.event=" << (EPOLL_EVENTS)fdContext->event;
-            LUWU_ASSERT(!(fdContext->event & event));
+                                     << " event=" << (EPOLL_EVENTS) event
+                                     << " fd_ctx.event=" << (EPOLL_EVENTS) fdContext->event;
+            LUWU_ASSERT(!(fdContext->event & event))
         }
 
         int op = fdContext->event ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
@@ -120,13 +120,13 @@ namespace liucxi {
         int rt = epoll_ctl(m_epfd, op, fd, &epollEvent);
         if (rt) {
             LUWU_LOG_ERROR(g_logger) << "epoll_ctl(" << m_epfd << ", "
-                                     << op << ", " << fd << ", " << (EPOLL_EVENTS)epollEvent.events << "):"
+                                     << op << ", " << fd << ", " << (EPOLL_EVENTS) epollEvent.events << "):"
                                      << rt << "(" << errno << ")(" << strerror(errno) << ")";
             return false;
         }
 
         ++m_pendingEventCount;
-        fdContext->event = (Event)(fdContext->event | event);
+        fdContext->event = (Event) (fdContext->event | event);
         FdContext::EventContext &eventContext = fdContext->getEventContext(event);
         LUWU_ASSERT(!eventContext.scheduler && !eventContext.fiber && !eventContext.cb);
 
@@ -142,7 +142,7 @@ namespace liucxi {
 
     bool IOManager::delEvent(int fd, Event event) {
         RWMutexType::ReadLock lock(m_mutex);
-        if ((int)m_fdContexts.size() <= fd) {
+        if ((int) m_fdContexts.size() <= fd) {
             return false;
         }
         FdContext *fdContext = m_fdContexts[fd];
@@ -153,7 +153,7 @@ namespace liucxi {
             return false;
         }
 
-        auto new_event = (Event)(fdContext->event & ~event);
+        auto new_event = (Event) (fdContext->event & ~event);
         int op = new_event ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
         epoll_event epollEvent{};
         epollEvent.events = EPOLLET | new_event;
@@ -162,7 +162,7 @@ namespace liucxi {
         int rt = epoll_ctl(m_epfd, op, fd, &epollEvent);
         if (rt) {
             LUWU_LOG_ERROR(g_logger) << "epoll_ctl(" << m_epfd << ", "
-                                     << op << ", " << fd << ", " << (EPOLL_EVENTS)epollEvent.events << "):"
+                                     << op << ", " << fd << ", " << (EPOLL_EVENTS) epollEvent.events << "):"
                                      << rt << "(" << errno << ")(" << strerror(errno) << ")";
             return false;
         }
@@ -177,7 +177,7 @@ namespace liucxi {
 
     bool IOManager::cancelEvent(int fd, Event event) {
         RWMutexType::ReadLock lock(m_mutex);
-        if ((int)m_fdContexts.size() <= fd) {
+        if ((int) m_fdContexts.size() <= fd) {
             return false;
         }
         FdContext *fdContext = m_fdContexts[fd];
@@ -188,7 +188,7 @@ namespace liucxi {
             return false;
         }
 
-        auto new_event = (Event)(fdContext->event & ~event);
+        auto new_event = (Event) (fdContext->event & ~event);
         int op = new_event ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
         epoll_event epollEvent{};
         epollEvent.events = EPOLLET | new_event;
@@ -197,7 +197,7 @@ namespace liucxi {
         int rt = epoll_ctl(m_epfd, op, fd, &epollEvent);
         if (rt) {
             LUWU_LOG_ERROR(g_logger) << "epoll_ctl(" << m_epfd << ", "
-                                     << op << ", " << fd << ", " << (EPOLL_EVENTS)epollEvent.events << "):"
+                                     << op << ", " << fd << ", " << (EPOLL_EVENTS) epollEvent.events << "):"
                                      << rt << "(" << errno << ")(" << strerror(errno) << ")";
             return false;
         }
@@ -209,7 +209,7 @@ namespace liucxi {
 
     bool IOManager::cancelAll(int fd) {
         RWMutexType::ReadLock lock(m_mutex);
-        if ((int)m_fdContexts.size() <= fd) {
+        if ((int) m_fdContexts.size() <= fd) {
             return false;
         }
         FdContext *fdContext = m_fdContexts[fd];
@@ -228,7 +228,7 @@ namespace liucxi {
         int rt = epoll_ctl(m_epfd, op, fd, &epollEvent);
         if (rt) {
             LUWU_LOG_ERROR(g_logger) << "epoll_ctl(" << m_epfd << ", "
-                                     << op << ", " << fd << ", " << (EPOLL_EVENTS)epollEvent.events << "):"
+                                     << op << ", " << fd << ", " << (EPOLL_EVENTS) epollEvent.events << "):"
                                      << rt << "(" << errno << ")(" << strerror(errno) << ")";
             return false;
         }
@@ -246,7 +246,7 @@ namespace liucxi {
     }
 
     IOManager *IOManager::GetThis() {
-        return dynamic_cast<IOManager*>(Scheduler::GetThis());
+        return dynamic_cast<IOManager *>(Scheduler::GetThis());
     }
 
     void IOManager::tickle() {
@@ -258,11 +258,102 @@ namespace liucxi {
     }
 
     bool IOManager::stopping() {
-        return m_pendingEventCount == 0 && Scheduler::stopping();
+        uint64_t timeout = 0;
+        return stopping(timeout);
+    }
+
+    bool IOManager::stopping(uint64_t &timeout) {
+        timeout = getNextTimer();
+        return timeout == ~0ull && m_pendingEventCount == 0 && Scheduler::stopping();
     }
 
     void IOManager::idle() {
+        const uint64_t MAX_EVENTS = 256;
+        auto *events = new epoll_event[MAX_EVENTS]();
+        std::shared_ptr<epoll_event> shared_event(events, [](epoll_event *ptr) {
+            delete[] ptr;
+        });
 
+        while (true) {
+            uint64_t next_timeout = 0;
+            if (stopping(next_timeout)) {
+                LUWU_LOG_INFO(g_logger) << "name=" << getName() << "idle stopping exit";
+                break;
+            }
+
+            int rt = 0;
+            do {
+                static const int MAX_TIMEOUT = 5000;
+                if (next_timeout != ~0ull) {
+                    next_timeout = std::min((int)next_timeout, MAX_TIMEOUT);
+                } else {
+                    next_timeout = MAX_TIMEOUT;
+                }
+                rt = epoll_wait(m_epfd, events, MAX_EVENTS, (int)next_timeout);
+                if (rt < 0 && errno == EINTR) {
+                    continue;
+                } else {
+                    break;
+                }
+            } while (true);
+
+            std::vector<std::function<void()>> cbs;
+            listExpiredCb(cbs);
+            if (!cbs.empty()) {
+                for (const auto &cb : cbs) {
+                    scheduler(cb);
+                }
+                cbs.clear();
+            }
+
+            for (int i = 0; i < rt; ++i) {
+                epoll_event &event = events[i];
+                if (event.data.fd == m_tickleFds[0]) {
+                    uint8_t dummy;
+                    while (read(m_tickleFds[0], &dummy, 1) > 0);
+                    continue;
+                }
+
+                auto *fd_ctx = (FdContext *)event.data.ptr;
+                FdContext::MutexType::Lock lock(fd_ctx->mutex);
+
+                if (event.events & (EPOLLERR | EPOLLHUP)) {
+                    event.events |= (EPOLLIN | EPOLLOUT) & fd_ctx->event;
+                }
+                int real_events = NONE;
+                if (event.events & EPOLLIN) {
+                    real_events |= READ;
+                }
+                if (event.events & EPOLLOUT) {
+                    real_events |= WRITE;
+                }
+
+                if ((fd_ctx->event & real_events) == NONE) {
+                    continue;
+                }
+
+                int left_events = (fd_ctx->event & ~real_events);
+                int op = left_events ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
+                event.events = EPOLLET | left_events;
+                int rt2 = epoll_ctl(m_epfd, op, fd_ctx->fd, &event);
+                if (rt2) {
+                    LUWU_LOG_ERROR(g_logger) << "epoll_ctl(" << m_epfd << ", "
+                                             << op << ", " << fd_ctx->fd << ", " << (EPOLL_EVENTS) event.events << "):"
+                                             << rt2 << "(" << errno << ")(" << strerror(errno) << ")";
+                    continue;
+                }
+            } // end for
+
+            Fiber::ptr cur = Fiber::GetThis();
+            auto raw_ptr = cur.get();
+            cur.reset();
+
+            raw_ptr->yield();
+        } // end while
+    }
+
+    void IOManager::onTimerInsertAtFront() {
+        tickle();
     }
 
 }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.10)
 project(luwu)
 
 find_package(Threads)
@@ -16,9 +16,9 @@ set(SRC
         luwu/thread.cpp
         luwu/fiber.cpp
         luwu/scheduler.cpp
-        luwu/iomanager.cpp)
+        luwu/iomanager.cpp
+        luwu/timer.cpp)
 add_library(luwu SHARED ${SRC})
-
 add_executable(log tests/test_log.cpp)
 add_dependencies(log luwu)
 target_link_libraries(log luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
@@ -42,3 +42,11 @@ target_link_libraries(fiber luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} y
 add_executable(scheduler tests/test_scheduler.cpp)
 add_dependencies(scheduler luwu)
 target_link_libraries(scheduler luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+
+add_executable(iomanager tests/test_iomanager.cpp)
+add_dependencies(iomanager luwu)
+target_link_libraries(iomanager luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+
+add_executable(test_timer tests/test_timer.cpp)
+add_dependencies(test_timer luwu)
+target_link_libraries(test_timer luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)

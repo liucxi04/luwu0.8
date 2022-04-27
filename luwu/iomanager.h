@@ -11,17 +11,18 @@
 #include "fiber.h"
 #include "scheduler.h"
 #include "mutex.h"
+#include "timer.h"
 
 namespace liucxi {
-    class IOManager : public Scheduler {
+    class IOManager : public Scheduler, public TimerManager{
     public:
         typedef std::shared_ptr<IOManager> ptr;
         typedef RWMutex RWMutexType;
 
         enum Event {
             NONE = 0x0,
-            READ = 0x01,
-            WRITE = 0x02,
+            READ = 0x1,
+            WRITE = 0x4,
         };
 
     private:
@@ -64,6 +65,10 @@ namespace liucxi {
         void idle() override;
 
         bool stopping() override;
+
+        bool stopping(uint64_t &timeout);
+
+        void onTimerInsertAtFront() override;
 
         void contextResize(size_t size);
 
