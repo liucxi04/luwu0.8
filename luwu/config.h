@@ -18,6 +18,7 @@
 #include <boost/lexical_cast.hpp>
 #include "log.h"
 #include "mutex.h"
+#include "macro.h"
 
 namespace liucxi {
 

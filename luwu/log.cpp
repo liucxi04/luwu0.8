@@ -4,14 +4,17 @@
 
 #include <iostream>
 #include <functional>
+#include <cstdio>
 #include <cstdarg>
 #include <set>
 #include "log.h"
+#include "macro.h"
 #include "config.h"
 
 namespace liucxi {
 
-    std::string LogLevel::toString(LogLevel::Level level) {
+    // 通过传统的 switch case 分支完成 Level 到 string 的转化
+    std::string LogLevel::ToString(LogLevel::Level level) {
         switch (level) {
             case DEBUG:
                 return "DEBUG";
@@ -28,7 +31,10 @@ namespace liucxi {
         }
     }
 
-    LogLevel::Level LogLevel::fromString(const std::string &str) {
+    // 通过宏定义的方式完成 string 到 Level 的转化
+    // define 定义了一个函数宏， undef 取消该定义
+    // #v 给变量 v 加上双引号，即表示 v 是一个字符串， #@x 给变量 x 加上单引号，即表示 x 是一个字符
+    LogLevel::Level LogLevel::FromString(const std::string &str) {
 #define XX(level, v) if (str == #v) { return LogLevel::level; }
         XX(DEBUG, DEBUG)
         XX(INFO, INFO)
@@ -39,22 +45,59 @@ namespace liucxi {
         return LogLevel::UNKNOWN;
     }
 
-    LogEvent::LogEvent(std::string logger_name, LogLevel::Level level, const char *file, int32_t line,
-                       int64_t elapse, uint32_t thread_id, uint64_t fiber_id, time_t time,
-                       std::string thread_name)
-            : m_loggerName(std::move(logger_name)), m_level(level), m_file(file), m_line(line), m_elapse(elapse),
-              m_threadId(thread_id), m_fiberId(fiber_id), m_time(time), m_threadName(std::move(thread_name)) {
+    LogEvent::LogEvent(std::string loggerName, LogLevel::Level level, const char *file, int32_t line, int64_t elapse, 
+                       uint32_t threadId, uint64_t fiberId, time_t time, std::string threadName)
+            : m_loggerName(std::move(loggerName)), m_level(level), m_file(file), m_line(line), m_elapse(elapse),
+              m_threadId(threadId), m_fiberId(fiberId), m_time(time), m_threadName(std::move(threadName)) {
     }
 
-    /**
-     * TODO Understand
-     * */
+    // 需要包含 cstdarg 和 cstdio 两个头文件
+    // 这四行代码为解决不定参数格式化输出的模板
     void LogEvent::printf(const char *fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
         vprintf(fmt, ap);
         va_end(ap);
     }
+
+    /**
+     * @note 下面许多类构造函数的 string 参数没有作用，是为了与需要 string 成员的类保持一致而存在的
+     */
+    class LoggerNameFormatItem : public LogFormatter::FormatItem {
+    public:
+        explicit LoggerNameFormatItem(const std::string &str) {}
+
+        void format(std::ostream &os, LogEvent::ptr event) override {
+            os << event->getLoggerName();
+        }
+    };
+
+    class LevelFormatItem : public LogFormatter::FormatItem {
+    public:
+        explicit LevelFormatItem(const std::string &str) {}
+
+        void format(std::ostream &os, LogEvent::ptr event) override {
+            os << LogLevel::ToString(event->getLevel());
+        }
+    };
+
+    class FileFormatItem : public LogFormatter::FormatItem {
+    public:
+        explicit FileFormatItem(const std::string &str) {}
+
+        void format(std::ostream &os, LogEvent::ptr event) override {
+            os << event->getFile();
+        }
+    };
+
+    class LineFormatItem : public LogFormatter::FormatItem {
+    public:
+        explicit LineFormatItem(const std::string &str) {}
+
+        void format(std::ostream &os, LogEvent::ptr event) override {
+            os << event->getLine();
+        }
+    };
 
     class MessageFormatItem : public LogFormatter::FormatItem {
     public:
@@ -65,30 +108,12 @@ namespace liucxi {
         }
     };
 
-    class LevelFormatItem : public LogFormatter::FormatItem {
-    public:
-        explicit LevelFormatItem(const std::string &str) {}
-
-        void format(std::ostream &os, LogEvent::ptr event) override {
-            os << LogLevel::toString(event->getLevel());
-        }
-    };
-
     class ElapseFormatItem : public LogFormatter::FormatItem {
     public:
         explicit ElapseFormatItem(const std::string &str) {}
 
         void format(std::ostream &os, LogEvent::ptr event) override {
             os << event->getElapse();
-        }
-    };
-
-    class LoggerNameFormatItem : public LogFormatter::FormatItem {
-    public:
-        explicit LoggerNameFormatItem(const std::string &str) {}
-
-        void format(std::ostream &os, LogEvent::ptr event) override {
-            os << event->getLoggerName();
         }
     };
 
@@ -110,18 +135,9 @@ namespace liucxi {
         }
     };
 
-    class ThreadNameFormatItem : public LogFormatter::FormatItem {
+    class TimeFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit ThreadNameFormatItem(const std::string &str) {}
-
-        void format(std::ostream &os, LogEvent::ptr event) override {
-            os << event->getThreadName();
-        }
-    };
-
-    class DateTimeFormatItem : public LogFormatter::FormatItem {
-    public:
-        explicit DateTimeFormatItem(std::string format = "%Y-%m-%d %H:%M:%S")
+        explicit TimeFormatItem(std::string format = "%Y-%m-%d %H:%M:%S")
                 : m_format(std::move(format)) {
             if (m_format.empty()) {
                 m_format = "%Y-%m-%d %H:%M:%S";
@@ -131,9 +147,9 @@ namespace liucxi {
         void format(std::ostream &os, LogEvent::ptr event) override {
             struct tm tm{};
             auto time = (time_t) event->getTime();
-            localtime_r(&time, &tm);
+            localtime_r(&time, &tm); // 将给定的时间戳(time)转换为本地时间(tm)
             char buf[64];
-            strftime(buf, sizeof(buf), m_format.c_str(), &tm);
+            strftime(buf, sizeof(buf), m_format.c_str(), &tm); // 格式化时间表示
             os << buf;
         }
 
@@ -141,21 +157,12 @@ namespace liucxi {
         std::string m_format;
     };
 
-    class FileNameFormatItem : public LogFormatter::FormatItem {
+    class ThreadNameFormatItem : public LogFormatter::FormatItem {
     public:
-        explicit FileNameFormatItem(const std::string &str) {}
+        explicit ThreadNameFormatItem(const std::string &str) {}
 
         void format(std::ostream &os, LogEvent::ptr event) override {
-            os << event->getFile();
-        }
-    };
-
-    class LineFormatItem : public LogFormatter::FormatItem {
-    public:
-        explicit LineFormatItem(const std::string &str) {}
-
-        void format(std::ostream &os, LogEvent::ptr event) override {
-            os << event->getLine();
+            os << event->getThreadName();
         }
     };
 
@@ -164,7 +171,7 @@ namespace liucxi {
         explicit NewLineFormatItem(const std::string &str) {}
 
         void format(std::ostream &os, LogEvent::ptr event) override {
-            os << std::endl;
+            os << "\n";
         }
     };
 
@@ -177,6 +184,9 @@ namespace liucxi {
         }
     };
 
+    /**
+     * @brief 用来输出模板字符串里的常规字符
+     * */
     class StringFormatItem : public LogFormatter::FormatItem {
     public:
         explicit StringFormatItem(std::string str)
@@ -254,8 +264,6 @@ namespace liucxi {
                     ++i;
                 }
                 if (m_pattern[i] != '}') {
-                    std::cout << "[ERROR] LogFormatter::init() " << "pattern: [" << m_pattern << "] '{' not closed"
-                              << std::endl;
                     error = true;
                     break; //不符合规范，不是 }
                 }
@@ -275,13 +283,12 @@ namespace liucxi {
 
         static std::map<std::string, std::function<FormatItem::ptr(const std::string)>> s_format_items = {
 #define XX(str, C) { #str, [](const std::string &fmt) { return FormatItem::ptr(new C(fmt)); } },
-
                 XX(m, MessageFormatItem)
                 XX(p, LevelFormatItem)
                 XX(c, LoggerNameFormatItem)
-                XX(d, DateTimeFormatItem)
+                XX(d, TimeFormatItem)
                 XX(r, ElapseFormatItem)
-                XX(f, FileNameFormatItem)
+                XX(f, FileFormatItem)
                 XX(l, LineFormatItem)
                 XX(t, ThreadIdFormatItem)
                 XX(b, FiberIdFormatItem)
@@ -295,12 +302,10 @@ namespace liucxi {
             if (v.first == 0) {
                 m_items.push_back(FormatItem::ptr(new StringFormatItem(v.second)));
             } else if (v.second == "d") {
-                m_items.push_back(FormatItem::ptr(new DateTimeFormatItem(data_format)));
+                m_items.push_back(FormatItem::ptr(new TimeFormatItem(data_format)));
             } else {
                 auto it = s_format_items.find(v.second);
                 if (it == s_format_items.end()) {
-                    std::cout << "[ERROR] LogFormatter::init() " << "pattern: [" << m_pattern << "] " <<
-                              "unknown format item: " << v.second << std::endl;
                     error = true;
                     break;
                 } else {
@@ -331,11 +336,7 @@ namespace liucxi {
     }
 
     void StdoutLogAppender::log(LogEvent::ptr event) {
-        if (m_formatter) {
-            m_formatter->format(std::cout, event);
-        } else {
-            m_defaultFormatter->format(std::cout, event);
-        }
+        m_formatter->format(std::cout, event);
     }
 
     std::string StdoutLogAppender::toYamlString() {
@@ -349,11 +350,9 @@ namespace liucxi {
     }
 
     FileLogAppender::FileLogAppender(std::string filename)
-            : LogAppender(std::make_shared<LogFormatter>()), m_filename(std::move(filename)) {
+            : LogAppender(std::make_shared<LogFormatter>())
+            , m_filename(std::move(filename)) {
         reopen();
-        if (m_reopenError) {
-            std::cout << "reopen file " << m_filename << " error" << std::endl;
-        }
     }
 
     bool FileLogAppender::reopen() {
@@ -368,25 +367,20 @@ namespace liucxi {
 
     /**
      * @note 如果一个日志事件距离上次写日志超过 3 秒，那就重新打开一次日志文件
+     * 应该是为了确保日志文件可以正常写入
      * */
     void FileLogAppender::log(LogEvent::ptr event) {
         uint64_t now = event->getTime();
         if (now >= m_lastTime + 3) {
             reopen();
-            if (m_reopenError) {
-                std::cout << "reopen file " << m_filename << " error" << std::endl;
-            }
             m_lastTime = now;
         }
         if (m_reopenError) {
             return;
         }
         MutexType::Lock lock(m_mutex);
-        if (m_formatter) {
-            m_formatter->format(m_filestream, event);
-        } else {
-            m_defaultFormatter->format(m_filestream, event);
-        }
+
+        m_formatter->format(m_filestream, event);
     }
 
     std::string FileLogAppender::toYamlString() {
@@ -394,7 +388,7 @@ namespace liucxi {
         YAML::Node node;
         node["type"] = "FileLogAppender";
         node["file"] = m_filename;
-        node["pattern"] = m_formatter ? m_formatter->getPattern() : m_defaultFormatter->getPattern();
+        node["pattern"] = m_formatter->getPattern();
         std::stringstream ss;
         ss << node;
         return ss.str();
@@ -427,7 +421,7 @@ namespace liucxi {
         MutexType::Lock lock(m_mutex);
         YAML::Node node;
         node["name"] = m_name;
-        node["level"] = LogLevel::toString(m_level);
+        node["level"] = LogLevel::ToString(m_level);
         for (const auto &i : m_appenderList) {
             node["appenders"].push_back(YAML::Load(i->toYamlString()));
         }
@@ -512,7 +506,7 @@ namespace liucxi {
                 throw std::logic_error("log config name is null");
             }
             loggerDefine.name = node["name"].as<std::string>();
-            loggerDefine.level = LogLevel::fromString(node["level"].IsDefined() ? node["level"].as<std::string>() : "");
+            loggerDefine.level = LogLevel::FromString(node["level"].IsDefined() ? node["level"].as<std::string>() : "");
 
             if (node["appenders"].IsDefined()) {
                 for (const auto &appender : node["appenders"]) {
@@ -552,7 +546,7 @@ namespace liucxi {
         std::string operator()(const LoggerDefine &loggerDefine) {
             YAML::Node node;
             node["name"] = loggerDefine.name;
-            node["level"] = LogLevel::toString(loggerDefine.level);
+            node["level"] = LogLevel::ToString(loggerDefine.level);
             for (const auto &appender : loggerDefine.appenders) {
                 YAML::Node appenderNode;
                 if (appender.type == 1) {

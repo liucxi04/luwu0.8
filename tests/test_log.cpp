@@ -3,16 +3,15 @@
 //
 
 #include <iostream>
-#include <unistd.h>
-#include "../luwu/log.h"
+#include "../luwu/macro.h"
 using namespace liucxi;
 
 Logger::ptr g_logger = LUWU_LOG_ROOT(); // 默认WARN级别
 
 int main(int argc, char *argv[]) {
 
-    std::cout << LogLevel::toString(LogLevel::DEBUG) << std::endl;
-    std::cout << LogLevel::fromString("DEBUG") <<std::endl;
+    std::cout << LogLevel::ToString(LogLevel::DEBUG) << std::endl;
+    std::cout << LogLevel::FromString("DEBUG") <<std::endl;
 
     StdoutLogAppender::ptr appender1(new StdoutLogAppender);
     StdoutLogAppender::ptr appender2(new StdoutLogAppender);

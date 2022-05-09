@@ -20,53 +20,7 @@
 #include "mutex.h"
 #include "singleton.h"
 
-
-/**
- * @brief 获取 root 日志器，默认级别为 INFO
- * */
-#define LUWU_LOG_ROOT() liucxi::LoggerMgr::getInstance()->getRoot()
-
-/**
- * @brief 获取指定名称的日志器
- * */
-#define LUWU_LOG_NAME(name) liucxi::LoggerMgr::getInstance()->getLogger(name)
-
-/**
- * @brief 流式输出
- * */
-#define LUWU_LOG_LEVEL(logger, level) \
-    if (level >= logger->getLevel())  \
-        liucxi::LogEventWrap(logger, liucxi::LogEvent::ptr(new liucxi::LogEvent(logger->getName(), \
-            level, __FILE__, __LINE__, liucxi::getElapseMS() - logger->getCreateTime(), \
-            liucxi::getThreadId(), liucxi::getFiberId(), time(nullptr), liucxi::getThreadName()))).getLogEvent() \
-            ->getSS()
-
-#define LUWU_LOG_DEBUG(logger) LUWU_LOG_LEVEL(logger, liucxi::LogLevel::DEBUG)
-#define LUWU_LOG_INFO(logger) LUWU_LOG_LEVEL(logger, liucxi::LogLevel::INFO)
-#define LUWU_LOG_WARN(logger) LUWU_LOG_LEVEL(logger, liucxi::LogLevel::WARN)
-#define LUWU_LOG_ERROR(logger) LUWU_LOG_LEVEL(logger, liucxi::LogLevel::ERROR)
-#define LUWU_LOG_FATAL(logger) LUWU_LOG_LEVEL(logger, liucxi::LogLevel::FATAL)
-
-/**
- * @brief fmt 输出
- * */
-#define LUWU_LOG_FMT_LEVEL(logger, level, fmt, ...) \
-    if(level >= logger->getLevel())                 \
-        liucxi::LogEventWrap(logger, liucxi::LogEvent::ptr(new liucxi::LogEvent(logger->getName(), \
-            level, __FILE__, __LINE__, liucxi::getElapseMS() - logger->getCreateTime(), \
-            liucxi::getThreadId(), liucxi::getFiberId(), time(nullptr), liucxi::getThreadName()))).getLogEvent() \
-            ->printf(fmt, __VA_ARGS__)
-
-#define LUWU_LOG_FMT_DEBUG(logger, fmt, ...) LUWU_LOG_FMT_LEVEL(logger, liucxi::LogLevel::DEBUG, fmt, __VA_ARGS__)
-#define LUWU_LOG_FMT_INFO(logger, fmt, ...) LUWU_LOG_FMT_LEVEL(logger, liucxi::LogLevel::INFO, fmt, __VA_ARGS__)
-#define LUWU_LOG_FMT_WARN(logger, fmt, ...) LUWU_LOG_FMT_LEVEL(logger, liucxi::LogLevel::WARN, fmt, __VA_ARGS__)
-#define LUWU_LOG_FMT_ERROR(logger, fmt, ...) LUWU_LOG_FMT_LEVEL(logger, liucxi::LogLevel::ERROR, fmt, __VA_ARGS__)
-#define LUWU_LOG_FMT_FATAL(logger, fmt, ...) LUWU_LOG_FMT_LEVEL(logger, liucxi::LogLevel::FATAL, fmt, __VA_ARGS__)
-
-
 namespace liucxi {
-
-    class Logger;
 
     /**
      * @brief 定义日志级别，以及日志级别与字符串的相互转化
@@ -82,9 +36,9 @@ namespace liucxi {
             FATAL = 5
         };
 
-        static std::string toString(LogLevel::Level level);
+        static std::string ToString(LogLevel::Level level);
 
-        static LogLevel::Level fromString(const std::string &str);
+        static LogLevel::Level FromString(const std::string &str);
     };
 
     /**
@@ -94,8 +48,11 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<LogEvent> ptr;
 
-        LogEvent(std::string logger_name, LogLevel::Level level, const char *file, int32_t line, int64_t elapse,
-                 uint32_t thread_id, uint64_t fiber_id, time_t time, std::string thread_name);
+        /**
+         * @note 为9个数据成员进行了赋值，m_ss 成员 TODO
+         * */
+        LogEvent(std::string loggerName, LogLevel::Level level, const char *file, int32_t line, int64_t elapse,
+                 uint32_t threadId, uint64_t fiberId, time_t time, std::string threadName);
 
         const std::string &getLoggerName() const { return m_loggerName; }
 
@@ -122,6 +79,9 @@ namespace liucxi {
 
         const std::string &getThreadName() const { return m_threadName; }
 
+        /**
+         * @brief 实现了不定参数的格式化输出
+         */
         static void printf(const char *fmt, ...);
 
     private:
@@ -138,7 +98,7 @@ namespace liucxi {
     };
 
     /**
-     * @brief 定义日志格式器，用来控制日志事件的输出格式
+     * @brief 定义日志格式器，用来将一个日志事件转化成指定的格式
      * */
     class LogFormatter {
     public:
@@ -195,11 +155,11 @@ namespace liucxi {
     private:
         bool m_error = false;  /// 解析是否出错
         std::string m_pattern; /// 日志输出的模板
-        std::vector<FormatItem::ptr> m_items;
+        std::vector<FormatItem::ptr> m_items; /// 解析完模板字符串得到的一组按序的 FormatItem 对象
     };
 
     /**
-     * @brief 日志输出地，需要被继承
+     * @brief 定义日志输出器，需要被继承
      * */
     class LogAppender {
     public:
@@ -207,7 +167,7 @@ namespace liucxi {
         typedef Spinlock MutexType;
 
         explicit LogAppender(LogFormatter::ptr formatter)
-                : m_defaultFormatter(std::move(formatter)) {
+                : m_formatter(std::move(formatter)) {
         };
 
         virtual ~LogAppender() = default;
@@ -215,7 +175,7 @@ namespace liucxi {
         virtual std::string toYamlString() = 0;
 
         /**
-         * @brief 将日志事件进行输出，使用 m_formatter 或者 m_defaultFormatter，需要子类实现
+         * @brief 将日志事件进行输出，需要子类实现
          * */
         virtual void log(LogEvent::ptr event) = 0;
 
@@ -226,13 +186,12 @@ namespace liucxi {
 
         LogFormatter::ptr getFormatter() {
             MutexType::Lock lock(m_mutex);
-            return m_formatter ? m_formatter : m_defaultFormatter;
+            return m_formatter;
         }
 
     protected:
         MutexType m_mutex;
-        LogFormatter::ptr m_formatter;        /// 用户指定的格式
-        LogFormatter::ptr m_defaultFormatter; /// 默认的格式
+        LogFormatter::ptr m_formatter;
     };
 
     /**
@@ -279,7 +238,7 @@ namespace liucxi {
     };
 
     /**
-     * @brief 日志器，含有多个日志输出地
+     * @brief 日志器，含有多个日志输出地，默认日志级别为最低的 LogLevel::DEBUG
      * */
     class Logger {
     public:
@@ -287,7 +246,9 @@ namespace liucxi {
         typedef Spinlock MutexType;
 
         explicit Logger(std::string name = "default")
-                : m_name(std::move(name)), m_level(LogLevel::DEBUG) {
+                : m_name(std::move(name))
+                , m_level(LogLevel::DEBUG)
+                , m_creatTime(getElapseMS()){
         };
 
         void log(const LogEvent::ptr &event);

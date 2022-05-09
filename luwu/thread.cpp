@@ -2,9 +2,9 @@
 // Created by liucxi on 2022/4/16.
 //
 
-#include "thread.h"
-
 #include <utility>
+#include "thread.h"
+#include "macro.h"
 #include "log.h"
 
 namespace liucxi {

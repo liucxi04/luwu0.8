@@ -3,6 +3,7 @@
 //
 
 #include "log.h"
+#include "macro.h"
 #include "utils.h"
 #include "fiber.h"
 #include <unistd.h>
