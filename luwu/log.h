@@ -60,6 +60,7 @@ namespace liucxi {
 
         /**
          * @note getSS() 不可返回 const 类型
+         * @details 返回的是一个 string stream 的引用，在宏定义的最后会给 m_ss 赋值
          * */
         std::stringstream &getSS() { return m_ss; }
 

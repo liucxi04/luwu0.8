@@ -38,6 +38,7 @@
 
 /**
  * @brief fmt 输出
+ * @note 流式输出先输出日志现场，再输出日志信息， fmt 输出则相反
  * */
 #define LUWU_LOG_FMT_LEVEL(logger, level, fmt, ...) \
     if(level >= logger->getLevel())                 \

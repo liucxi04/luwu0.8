@@ -6,12 +6,9 @@
 #include "../luwu/macro.h"
 using namespace liucxi;
 
-Logger::ptr g_logger = LUWU_LOG_ROOT(); // 默认WARN级别
+int main() {
 
-int main(int argc, char *argv[]) {
-
-    std::cout << LogLevel::ToString(LogLevel::DEBUG) << std::endl;
-    std::cout << LogLevel::FromString("DEBUG") <<std::endl;
+    Logger::ptr g_logger = LUWU_LOG_ROOT(); // 默认 DEBUG 级别
 
     StdoutLogAppender::ptr appender1(new StdoutLogAppender);
     StdoutLogAppender::ptr appender2(new StdoutLogAppender);
@@ -22,29 +19,28 @@ int main(int argc, char *argv[]) {
 
     logger->delAppender(appender2);
 
-    auto ins = LoggerMgr::getInstance();
-    std::cout << g_logger->getLevel() << std::endl;
+    std::cout << LogLevel::ToString(g_logger->getLevel()) << std::endl;
     std::cout << "********1********"<<std::endl;
     LUWU_LOG_FATAL(g_logger) << "fatal msg";
     LUWU_LOG_ERROR(g_logger) << "err msg";
     LUWU_LOG_WARN(g_logger) << "warn msg";
-    LUWU_LOG_INFO(g_logger) << "info msg"; // no
-    LUWU_LOG_DEBUG(g_logger) << "debug msg";// no
+    LUWU_LOG_INFO(g_logger) << "info msg";
+    LUWU_LOG_DEBUG(g_logger) << "debug msg";
 
     std::cout << "********2********"<<std::endl;
     LUWU_LOG_FMT_FATAL(g_logger, "fatal %s:%d ", __FILE__, __LINE__);
     LUWU_LOG_FMT_ERROR(g_logger, "err %s:%d ", __FILE__, __LINE__);
     LUWU_LOG_FMT_WARN(g_logger, "warn %s:%d ", __FILE__, __LINE__);
-    LUWU_LOG_FMT_INFO(g_logger, "info %s:%d ", __FILE__, __LINE__);// no
-    LUWU_LOG_FMT_DEBUG(g_logger, "debug %s:%d ", __FILE__, __LINE__);// no
+    LUWU_LOG_FMT_INFO(g_logger, "info %s:%d ", __FILE__, __LINE__);
+    LUWU_LOG_FMT_DEBUG(g_logger, "debug %s:%d ", __FILE__, __LINE__);
 
     std::cout << "********3********"<<std::endl;
     setThreadName("brand_new_thread");
-    g_logger->setLevel(LogLevel::INFO);
+    g_logger->setLevel(LogLevel::WARN);
     LUWU_LOG_FATAL(g_logger) << "fatal msg";
     LUWU_LOG_ERROR(g_logger) << "err msg";
     LUWU_LOG_WARN(g_logger) << "warn msg";
-    LUWU_LOG_INFO(g_logger) << "info msg";
+    LUWU_LOG_INFO(g_logger) << "info msg";// no
     LUWU_LOG_DEBUG(g_logger) << "debug msg";// no
 
 
@@ -54,7 +50,7 @@ int main(int argc, char *argv[]) {
     LUWU_LOG_FATAL(g_logger) << "fatal msg";
     LUWU_LOG_ERROR(g_logger) << "err msg";
     LUWU_LOG_WARN(g_logger) << "warn msg";
-    LUWU_LOG_INFO(g_logger) << "info msg";
+    LUWU_LOG_INFO(g_logger) << "info msg";// no
     LUWU_LOG_DEBUG(g_logger) << "debug msg"; // no
 
     std::cout << "********5********"<<std::endl;
@@ -69,5 +65,41 @@ int main(int argc, char *argv[]) {
     LUWU_LOG_INFO(test_logger) << "info msg"; // no
     return 0;
 }
+/*
+int main() {
+    // 定义日志器，默认名字为 default
+    Logger::ptr logger(new Logger);
+    // 定义日志输出地，此处选择了标准输出
+    LogAppender::ptr logAppender1(new StdoutLogAppender);
+    // 定义日志格式
+    LogFormatter::ptr logFormatter(new LogFormatter("[%rms]%T%t%T%n%T%b%T[%p]%T[%c]%T%f:%l%T%m%N"));
 
+    // 为日志输出地设置格式
+    logAppender1->setFormatter(logFormatter);
+    // 为日志器添加输出地
+    logger->addAppender(logAppender1);
+
+    // 流式和 fmt 方式输出日志
+    LUWU_LOG_INFO(logger) << "test log";
+    LUWU_LOG_FMT_INFO(logger, "%c ", 'x');
+    return 0;
+}*/
+/*
+int main() {
+    // 定义日志器，默认名字为 default
+    Logger::ptr logger(new Logger);
+    // 定义日志输出地，此处选择了标准输出
+    LogAppender::ptr logAppender(new FileLogAppender("/home/liucxi/Documents/luwu/logs/fff.txt"));
+    // 定义日志格式
+    LogFormatter::ptr logFormatter(new LogFormatter("[%rms]%T%t%T%n%T%b%T[%p]%T[%c]%T%f:%l%T%m%N"));
+
+    // 为日志输出地设置格式
+    logAppender->setFormatter(logFormatter);
+    // 为日志器添加输出地
+    logger->addAppender(logAppender);
+
+    // 流式和 fmt 方式输出日志
+    LUWU_LOG_INFO(logger) << "test log";
+    return 0;
+}*/
 

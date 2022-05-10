@@ -431,7 +431,7 @@ namespace liucxi {
     }
 
     LoggerManager::LoggerManager() {
-        m_root.reset(new Logger("root"));
+        m_root.reset(new Logger("root")); // 智能指针的 reset 方法
         m_root->addAppender(LogAppender::ptr(new StdoutLogAppender));
         m_loggers[m_root->getName()] = m_root;
     }
