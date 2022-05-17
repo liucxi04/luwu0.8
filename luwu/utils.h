@@ -12,6 +12,18 @@
 
 namespace liucxi {
 
+    /**
+     * @brief 单例模式
+     */
+    template<typename T>
+    class Singleton {
+    public:
+        static T *getInstance() {
+            static T v;
+            return &v;
+        }
+    };
+
     pid_t getThreadId();
 
     u_int64_t getFiberId();

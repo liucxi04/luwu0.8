@@ -9,7 +9,6 @@
 #include "config.h"
 #include "thread.h"
 #include "utils.h"
-#include "singleton.h"
 #include "mutex.h"
 #include "macro.h"
 #include "fiber.h"

@@ -18,7 +18,6 @@
 #include <vector>
 #include "utils.h"
 #include "mutex.h"
-#include "singleton.h"
 
 namespace liucxi {
 
