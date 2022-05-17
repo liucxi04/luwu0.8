@@ -197,7 +197,7 @@ namespace liucxi {
                 return ToStr()(getValue());
             } catch (std::exception &e) {
                 LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "ConfigVar::toString exception " << e.what()
-                                                << " convert: " << typeid(m_val).name() << "to string";
+                                                << " convert: " << getTypeName() << "to string";
             }
             return "";
         }
@@ -210,10 +210,15 @@ namespace liucxi {
                 setValue(FromStr()(val));
             } catch (std::exception &e) {
                 LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "ConfigVar::fromString exception " << e.what()
-                                                << " convert: string to " << typeid(m_val).name();
+                                                << " convert: string to " << getTypeName();
             }
             return false;
         }
+
+        /**
+         * @brief 获取该配置项的类型
+         */
+        std::string getTypeName() const override { return typeid(T).name(); }
 
         T getValue() {
             RWMutexType::ReadLock lock(m_mutex);
@@ -222,10 +227,12 @@ namespace liucxi {
 
         void setValue(const T &val) {
             {
+                // 先尝试读，看新值和旧值是否相同
                 RWMutexType::ReadLock lock(m_mutex);
                 if (val == m_val) {
                     return;
                 }
+                /// 执行回调参数，回调函数的参数为 旧值 m_val、新值 val
                 for (auto &i : m_callbacks) {
                     i.second(m_val, val);
                 }
@@ -233,8 +240,6 @@ namespace liucxi {
             RWMutexType::WriteLock lock(m_mutex);
             m_val = val;
         }
-
-        std::string getTypeName() const override { return typeid(T).name(); }
 
         uint64_t addListener(on_change callback) {
             static uint64_t s_callbackId = 0;
@@ -265,6 +270,7 @@ namespace liucxi {
         RWMutexType m_mutex;
         /**
          * @brief 变更回调函数
+         * @param key map 的 key 要求是 uint_64_t 类型
          * */
         std::map<uint64_t, on_change> m_callbacks;
     };
@@ -278,31 +284,28 @@ namespace liucxi {
         typedef RWMutex RWMutexType;
 
         /**
-         * @brief 添加配置名和配置值
+         * @brief 初始化一个配置项
          * */
         template<typename T>
         static typename ConfigVar<T>::ptr lookup(const std::string &name, const T &default_val,
                                                  const std::string &description = "") {
-            /// 这种方法会出错
-            /*
-            auto tmp = lookup<T>(name);
-            if (tmp) {
-                LUWU_LOG_INFO(LUWU_LOG_ROOT()) << "lookup name = " << name << "exists";
-                return tmp;
-            }*/
             RWMutexType::WriteLock lock(GetMutex());
             auto it = getData().find(name);
+            // 该配置项已经存在
             if (it != getData().end()) {
                 auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
                 if (tmp) {
+                    // 配置项已经存在，不需要重复初始化
                     return tmp;
                 } else {
+                    // 配置项已经存在，但和当前配置的类型冲突
                     LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "lookup name = " << name << " exists but type not "
                                                     << typeid(T).name() << ", real type = " << it->second->getTypeName()
                                                     << " " << it->second->toString();
                     return nullptr;
                 }
             }
+            // 该配置项不存在
             if (name.find_first_not_of("qwertyuiopasdfghjklzxcvbnm._0123456789") != std::string::npos) {
                 LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "lookup name invalid" << name;
                 throw std::invalid_argument(name);
@@ -314,7 +317,7 @@ namespace liucxi {
         }
 
         /**
-         * @brief 按照配置名查找配置值
+         * @brief 按照配置名查找配置项
          * */
         template<typename T>
         static typename ConfigVar<T>::ptr lookup(const std::string &name) {
@@ -326,11 +329,12 @@ namespace liucxi {
             return std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
         }
 
-        static void loadFromYaml(const YAML::Node &root);
-
+        /**
+         * @brief 按照配置名查找配置项基类
+         */
         static ConfigVarBase::ptr lookupBase(const std::string &name);
 
-        // static void loadFromConfDir(const std::string &path, bool force = false);
+        static void loadFromYaml(const YAML::Node &root);
 
         static void visit(const std::function<void(ConfigVarBase::ptr)>& callback);
 
@@ -339,11 +343,18 @@ namespace liucxi {
          * @note 在此处定义静态 map，在 cpp 文件实现会出错，所以使用了下面这种方式，具体为什么可以等待实验
          * */
         // static ConfigVarMap s_data;
+
+        /**
+         * @brief 获取数据成员
+         */
         static ConfigVarMap &getData() {
             static ConfigVarMap s_data;
             return s_data;
         }
 
+        /**
+         * @brief 获取数据成员的 mutex
+         */
         static RWMutexType &GetMutex() {
             static RWMutexType s_mutex;
             return s_mutex;
