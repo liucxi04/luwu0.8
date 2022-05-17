@@ -1,14 +1,6 @@
-/**
- * @file test_config.cc
- * @brief 配置模块测试
- * @version 0.1
- * @date 2021-06-13
- */
-
 #include "log.h"
 #include "config.h"
-
-liucxi::Logger::ptr g_logger = LUWU_LOG_ROOT();
+#include <iostream>
 
 liucxi::ConfigVar<int>::ptr g_int =
         liucxi::Config::lookup("global.int", (int)8080, "global int");
@@ -34,7 +26,7 @@ liucxi::ConfigVar<std::map<std::string, int>>::ptr g_map_string2int =
 // 自定义配置
 class Person {
 public:
-    Person() = default;;
+    Person() = default;
     std::string m_name;
     int m_age = 0;
     bool m_sex = false;
@@ -100,21 +92,21 @@ void test_class() {
 
     if(!g_person->getListener(id)) {
         g_person->addListener([](const Person &old_value, const Person &new_value){
-            LUWU_LOG_INFO(g_logger) << "g_person value change, old value:" << old_value.toString()
-                                     << ", new value:" << new_value.toString();
+            std::cout << "g_person value change, old value:" << old_value.toString()
+                                     << ", new value:" << new_value.toString() << std::endl;
         });
     }
 
-    LUWU_LOG_INFO(g_logger) << g_person->getValue().toString();
+    std::cout << g_person->getValue().toString() << std::endl;
 
     for (const auto &i : g_person_map->getValue()) {
-        LUWU_LOG_INFO(g_logger) << i.first << ":" << i.second.toString();
+        std::cout << i.first << ":" << i.second.toString() << std::endl;
     }
 
     for(const auto &i : g_person_vec_map->getValue()) {
-        LUWU_LOG_INFO(g_logger) << i.first;
+        std::cout << i.first;
         for(const auto &j : i.second) {
-            LUWU_LOG_INFO(g_logger) << j.toString();
+            std::cout << j.toString() << std::endl;
         }
     }
 }
@@ -144,12 +136,12 @@ std::string formatMap(const T &m) {
 }
 
 void test_config() {
-    LUWU_LOG_INFO(g_logger) << "g_int value: " << g_int->getValue();
-    LUWU_LOG_INFO(g_logger) << "g_float value: " << g_float->getValue();
-    LUWU_LOG_INFO(g_logger) << "g_string value: " << g_string->getValue();
-    LUWU_LOG_INFO(g_logger) << "g_int_vec value: " << formatArray<std::vector<int>>(g_int_vec->getValue());
-    LUWU_LOG_INFO(g_logger) << "g_int_set value: " << formatArray<std::set<int>>(g_int_set->getValue());
-    LUWU_LOG_INFO(g_logger) << "g_int_map value: " << formatMap<std::map<std::string, int>>(g_map_string2int->getValue());
+    std::cout << "g_int value: " << g_int->getValue() << std::endl;
+    std::cout << "g_float value: " << g_float->getValue() << std::endl;
+    std::cout << "g_string value: " << g_string->getValue() << std::endl;
+    std::cout << "g_int_vec value: " << formatArray<std::vector<int>>(g_int_vec->getValue()) << std::endl;
+    std::cout << "g_int_set value: " << formatArray<std::set<int>>(g_int_set->getValue()) << std::endl;
+    std::cout << "g_int_map value: " << formatMap<std::map<std::string, int>>(g_map_string2int->getValue()) << std::endl;
     // 自定义配置项
     test_class();
 }
@@ -157,20 +149,16 @@ void test_config() {
 int main(int argc, char *argv[]) {
     // 设置g_int的配置变更回调函数
     g_int->addListener([](const int &old_value, const int &new_value) {
-        LUWU_LOG_INFO(g_logger) << "g_int value changed, old_value: " << old_value << ", new_value: " << new_value;
+        std::cout << "g_int value changed, old_value: " << old_value << ", new_value: " << new_value << std::endl;
     });
 
-    LUWU_LOG_INFO(g_logger) << "before============================";
-
+    std::cout << "before============================" << std::endl;
     test_config();
 
     YAML::Node node = YAML::LoadFile("../conf/test_config.yml");
     liucxi::Config::loadFromYaml(node);
-    YAML::Node node1 = YAML::LoadFile("../conf/log.yml");
-    liucxi::Config::loadFromYaml(node1);
 
-    LUWU_LOG_INFO(g_logger) << "after============================";
-
+    std::cout << "after============================" << std::endl;
     test_config();
 
     return 0;
