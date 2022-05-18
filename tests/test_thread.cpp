@@ -28,7 +28,8 @@ int main(int argc, char *argv[]) {
     int arg = 123456;
     for(int i = 0; i < 3; i++) {
         // 带参数的线程用std::bind进行参数绑定
-        liucxi::Thread::ptr thr(new liucxi::Thread(std::bind(func1, &arg), "thread_" + std::to_string(i)));
+        liucxi::Thread::ptr thr(new liucxi::Thread([argv0 = &arg] { return func1(argv0); }
+                                                        , "thread_" + std::to_string(i)));
         thrs.push_back(thr);
     }
 

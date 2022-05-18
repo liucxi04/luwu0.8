@@ -8,10 +8,10 @@
 #include "log.h"
 
 namespace liucxi {
+    /// 线程局部变量，指向当前正在执行的线程对象
     static thread_local Thread *t_thread;
+    /// 线程局部变量，当前正在执行的线程的名称
     static thread_local std::string t_thread_name = "UNKNOWN";
-
-    static Logger::ptr g_logger = LUWU_LOG_NAME("system");
 
     Thread::Thread(std::function<void()> callback, std::string name)
         : m_callback(std::move(callback))
@@ -20,15 +20,18 @@ namespace liucxi {
         if (m_name.empty()) {
             m_name = "UNKNOWN";
         }
+        // 创建线程之后，内核就已经开始调用 run 方法了。
         int rt = pthread_create(&m_thread, nullptr, &run, this);
         if (rt) {
-            LUWU_LOG_ERROR(g_logger) << "pthread_create fail, rt=" << rt << " name=" << name;
+            LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "pthread_create fail, rt=" << rt << " name=" << name;
             throw std::logic_error("pthread_create error");
         }
+        // 只有 run 方法里添加了信号量，这里才能通过，否则一直阻塞在这里
         m_sem.wait();
     }
 
     Thread::~Thread() {
+        // 如果主线程结束时子线程还没结束，那么分离主线程和子线程
         if (m_thread) {
             pthread_detach(m_thread);
         }
@@ -56,7 +59,7 @@ namespace liucxi {
         if (m_thread) {
             int rt = pthread_join(m_thread, nullptr);
             if (rt) {
-                LUWU_LOG_ERROR(g_logger) << "pthread_join fail, rt=" << rt << " name=" << m_name;
+                LUWU_LOG_ERROR(LUWU_LOG_ROOT()) << "pthread_join fail, rt=" << rt << " name=" << m_name;
                 throw std::logic_error("pthread_join error");
             }
             m_thread = 0;
