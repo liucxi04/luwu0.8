@@ -27,7 +27,10 @@ namespace liucxi {
     class LogLevel {
     public:
         enum Level {
-            UNKNOWN = 0,
+            /**
+             * @note 默认输出级别以上的日志，设置为 UNKNOWN 则不会输出任何日志
+             */
+            UNKNOWN = 100,
             DEBUG = 1,
             INFO = 2,
             WARN = 3,

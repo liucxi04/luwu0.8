@@ -11,7 +11,7 @@
 #include <cassert>
 
 /**
- * @brief 获取 root 日志器，默认级别为 INFO
+ * @brief 获取 root 日志器，默认级别为 DEBUG
  * */
 #define LUWU_LOG_ROOT() liucxi::LoggerMgr::getInstance()->getRoot()
 
