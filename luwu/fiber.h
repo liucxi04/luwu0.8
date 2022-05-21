@@ -64,6 +64,7 @@ namespace liucxi {
 
         /**
          * @brief 设置当前正在运行的协程，即设置线程局部变量 t_fiber 的值
+         * @note static 全局只有一个，即进程级别，会根据当前正在执行的线程使用对应的线程局部变量，下同
          * */
         static void SetThis(Fiber *fiber);
 
@@ -82,13 +83,13 @@ namespace liucxi {
         static uint64_t TotalFibers();
 
     private:
-        uint64_t m_id = 0;
-        uint32_t m_stackSize = 0;
-        State m_state = READY;
+        uint64_t m_id = 0;              /// 协程 ID
+        uint32_t m_stackSize = 0;       /// 协程栈大小
+        State m_state = READY;          /// 协程状态
         ucontext_t m_context{};         /// 协程上下文
         void *m_stack = nullptr;        /// 协程栈地址
         std::function<void()> m_cb;     /// 协程入口函数
-        bool m_runInScheduler = true;          /// 本协程是否参与调度器调度
+        bool m_runInScheduler = true;   /// 本协程是否参与调度器调度
     };
 }
 #endif //LUWU_FIBER_H
