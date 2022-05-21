@@ -1,5 +1,6 @@
 #include "log.h"
 #include "config.h"
+#include "ready.h"
 #include <iostream>
 
 liucxi::ConfigVar<int>::ptr g_int =
@@ -146,20 +147,33 @@ void test_config() {
     test_class();
 }
 
+//int main(int argc, char *argv[]) {
+//    // 设置g_int的配置变更回调函数
+//    g_int->addListener([](const int &old_value, const int &new_value) {
+//        std::cout << "g_int value changed, old_value: " << old_value << ", new_value: " << new_value << std::endl;
+//    });
+//
+//    std::cout << "before============================" << std::endl;
+//    test_config();
+//
+//    YAML::Node node = YAML::LoadFile("../conf/test_config.yml");
+//    liucxi::Config::loadFromYaml(node);
+//
+//    std::cout << "after============================" << std::endl;
+//    test_config();
+//
+//    return 0;
+//}
 int main(int argc, char *argv[]) {
-    // 设置g_int的配置变更回调函数
-    g_int->addListener([](const int &old_value, const int &new_value) {
-        std::cout << "g_int value changed, old_value: " << old_value << ", new_value: " << new_value << std::endl;
-    });
 
     std::cout << "before============================" << std::endl;
-    test_config();
+    std::cout << liucxi::g_logDefines->toString() << std::endl;
 
-    YAML::Node node = YAML::LoadFile("../conf/test_config.yml");
+    YAML::Node node = YAML::LoadFile("../conf/log.yml");
     liucxi::Config::loadFromYaml(node);
 
     std::cout << "after============================" << std::endl;
-    test_config();
+    std::cout << liucxi::g_logDefines->toString() << std::endl;
 
     return 0;
 }

@@ -2,7 +2,8 @@
 // Created by liucxi on 2022/4/16.
 //
 
-#include "luwu.h"
+#include "thread.h"
+#include "macro.h"
 
 liucxi::Logger::ptr g_logger = LUWU_LOG_ROOT();
 

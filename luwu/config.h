@@ -5,19 +5,19 @@
 #ifndef LUWU_CONFIG_H
 #define LUWU_CONFIG_H
 
-#include <string>
-#include <memory>
-#include <sstream>
-#include <utility>
-#include <vector>
-#include <functional>
 #include <map>
 #include <set>
 #include <list>
+#include <string>
+#include <memory>
+#include <sstream>
+#include <vector>
+#include <functional>
 #include <yaml-cpp/yaml.h>
 #include <boost/lexical_cast.hpp>
-#include "log.h"
-#include "mutex.h"
+
+//#include "log.h"
+//#include "mutex.h"
 #include "macro.h"
 
 namespace liucxi {

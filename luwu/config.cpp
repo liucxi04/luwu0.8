@@ -1,9 +1,8 @@
 //
 // Created by liucxi on 2022/4/9.
 //
+
 #include "config.h"
-#include "macro.h"
-#include <iostream>
 
 namespace liucxi {
 

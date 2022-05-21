@@ -2,10 +2,9 @@
 // Created by liucxi on 2022/4/16.
 //
 
-#include <utility>
 #include "thread.h"
 #include "macro.h"
-#include "log.h"
+
 
 namespace liucxi {
     /// 线程局部变量，指向当前正在执行的线程对象

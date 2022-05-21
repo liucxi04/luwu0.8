@@ -7,7 +7,7 @@
 
 #include <memory>
 #include <functional>
-#include "noncopyable.h"
+
 #include "mutex.h"
 
 namespace liucxi {

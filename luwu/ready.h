@@ -5,8 +5,10 @@
 #ifndef LUWU_READY_H
 #define LUWU_READY_H
 
-#include "log.h"
+//#include "log.h"
 #include "config.h"
+
+#include <iostream>
 
 namespace liucxi {
     /// 从配置文件中加载日志配置

@@ -5,17 +5,14 @@
 #ifndef LUWU_LOG_H
 #define LUWU_LOG_H
 
-#include <list>
 #include <map>
-#include <cstdio>
-#include <memory>
+#include <list>
+#include <vector>
+#include <memory>  // shared_ptr
 #include <string>
-#include <cstdint>
-#include <memory>
 #include <sstream>
 #include <fstream>
-#include <utility>
-#include <vector>
+
 #include "utils.h"
 #include "mutex.h"
 

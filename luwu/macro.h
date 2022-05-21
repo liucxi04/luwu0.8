@@ -6,7 +6,7 @@
 #define LUWU_MACRO_H
 
 #include "log.h"
-#include "utils.h"
+//#include "utils.h"
 #include <cstring>
 #include <cassert>
 

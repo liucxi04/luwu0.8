@@ -1,13 +1,13 @@
 //
 // Created by liucxi on 2022/4/18.
 //
-#include "macro.h"
-#include "config.h"
+
 #include "fiber.h"
+//#include "macro.h"
+#include "config.h"
 #include "scheduler.h"
 
 #include <utility>
-#include "log.h"
 
 namespace liucxi {
     static Logger::ptr g_logger = LUWU_LOG_NAME("system");
