@@ -5,11 +5,12 @@
 #ifndef LUWU_SCHEDULER_H
 #define LUWU_SCHEDULER_H
 
+#include <list>
 #include <vector>
 #include <memory>
-#include <list>
+
+//#include "mutex.h"
 #include "thread.h"
-#include "mutex.h"
 #include "fiber.h"
 
 namespace liucxi {
@@ -87,12 +88,12 @@ namespace liucxi {
 
     public:
         /**
-         * @brief 获取当前线程的调度器指针
+         * @brief 获取当前线程的调度器
          * */
         static Scheduler *GetThis();
 
         /**
-         * @brief 获取当前线程的主协程
+         * @brief 获取当前线程的调度协程
          * */
         static Fiber *GetMainFiber();
 
@@ -119,20 +120,14 @@ namespace liucxi {
             std::function<void()> cb = nullptr;
             int thread = -1;
 
+            SchedulerTask() = default;
             SchedulerTask(Fiber::ptr f, int thr)
                 : fiber(std::move(f))
                 , thread(thr) {
             }
-            SchedulerTask(Fiber::ptr *f, int thr)
-                : thread(thr) {
-                fiber.swap(*f);
-            }
             SchedulerTask(std::function<void()> f, int thr)
                 : cb(std::move(f))
                 , thread(thr) {
-            }
-            SchedulerTask()
-                : thread(-1) {
             }
             void reset() {
                 fiber = nullptr;
@@ -142,14 +137,14 @@ namespace liucxi {
         };
     private:
         MutexType m_mutex;
-        std::string m_name;                     /// 协程调度器名字
+        std::string m_name;                     /// 协程调度器名称
         std::vector<Thread::ptr> m_threads;     /// 线程池
         std::list<SchedulerTask> m_fibers;      /// 任务队列
 
         std::vector<int> m_threadIds;           /// 线程池的线程 ID 数组
         size_t m_threadCount = 0;               /// 工作线程数量，不包括 use_caller 主线程
-        std::atomic<size_t> m_activeThreadCount = {0};
-        std::atomic<size_t> m_idleThreadCount = {0};
+        std::atomic<size_t> m_activeThreadCount = {0};  /// 活跃线程数量
+        std::atomic<size_t> m_idleThreadCount = {0};    /// idle 线程数量
 
         bool m_useCaller;           /// 协程调度器所在的线程也参与调度
         Fiber::ptr m_rootFiber;     /// 调度器所在线程的调度协程，use call 为 true 时

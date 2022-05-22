@@ -117,7 +117,7 @@ namespace liucxi {
         SetThis(this);
         m_state = RUNNING;
 
-        // 如果协程参与调度器调度，那么应该和调度器的主协程进行交换，而不是和线程主协程
+        // 如果协程参与调度器调度，那么应该和该线程的调度协程进行交换，而不是和线程主协程
         if (m_runInScheduler) {
             if (swapcontext(&(Scheduler::GetMainFiber()->m_context), &m_context)) {
                 LUWU_ASSERT2(false, "swapcontext error")
@@ -137,7 +137,7 @@ namespace liucxi {
             m_state = READY;
         }
 
-        // 如果协程参与调度器调度，那么应该和调度器的主协程进行交换，而不是和线程主协程
+        // 如果协程参与调度器调度，那么应该和该线程的调度协程进行交换，而不是和线程主协程
         if (m_runInScheduler) {
             if (swapcontext(&m_context, &(Scheduler::GetMainFiber()->m_context))) {
                 LUWU_ASSERT2(false, "swapcontext error")
