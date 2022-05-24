@@ -44,17 +44,17 @@ namespace liucxi {
 
     bool Timer::refresh() {
         TimerManager::RWMutexType::WriteLock lock(m_manager->m_mutex);
-        if (!m_cb) {
-            return false;
+        if (m_cb) {
+            auto it = m_manager->m_timers.find(shared_from_this());
+            if (it == m_manager->m_timers.end()) {
+                return false;
+            }
+            m_manager->m_timers.erase(it);
+            m_next = GetCurrentMS() + m_ms;
+            m_manager->m_timers.insert(shared_from_this());
+            return true;
         }
-        auto it = m_manager->m_timers.find(shared_from_this());
-        if (it == m_manager->m_timers.end()) {
-            return false;
-        }
-        m_manager->m_timers.erase(it);
-        m_next = GetCurrentMS() + m_ms;
-        m_manager->m_timers.insert(shared_from_this());
-        return true;
+        return false;
     }
 
     bool Timer::reset(uint64_t ms, bool from_now) {
@@ -62,24 +62,25 @@ namespace liucxi {
             return true;
         }
         TimerManager::RWMutexType::WriteLock lock(m_manager->m_mutex);
-        if (!m_cb) {
-            return false;
+        if (m_cb) {
+            auto it = m_manager->m_timers.find(shared_from_this());
+            if (it == m_manager->m_timers.end()) {
+                return false;
+            }
+            m_manager->m_timers.erase(it);
+            uint64_t start;
+            if (from_now) {
+                start = GetCurrentMS();
+            } else {
+                start = m_next - m_ms;
+            }
+            m_ms = ms;
+            m_next = start + m_ms;
+            // 有可能出现在队头
+            m_manager->addTimer(shared_from_this(), lock);
+            return true;
         }
-        auto it = m_manager->m_timers.find(shared_from_this());
-        if (it == m_manager->m_timers.end()) {
-            return false;
-        }
-        m_manager->m_timers.erase(it);
-        uint64_t start;
-        if (from_now) {
-            start = GetCurrentMS();
-        } else {
-            start = m_next - m_ms;
-        }
-        m_ms = ms;
-        m_next = start + m_ms;
-        m_manager->addTimer(shared_from_this(), lock);
-        return true;
+        return false;
     }
 
     Timer::ptr TimerManager::addTimer(uint64_t ms, std::function<void()> cb, bool recurring) {

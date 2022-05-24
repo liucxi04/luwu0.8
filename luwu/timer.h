@@ -19,10 +19,22 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<Timer> ptr;
 
+        /**
+         * @brief 取消定时器
+         */
         bool cancel();
 
+        /**
+         * @brief 重新设置定时器的执行时间
+         * @details m_next = GetCurrentMS() + m_ms;
+         */
         bool refresh();
 
+        /**
+         * @brief 重置定时器
+         * @param ms 定时器执行间隔时间
+         * @param from_now 是否从当前时间开始计算
+         */
         bool reset(uint64_t ms, bool from_now);
 
     private:
@@ -31,11 +43,11 @@ namespace liucxi {
         explicit Timer(uint64_t next) : m_next(next) {}
 
     private:
-        bool m_recurring = false;
-        uint64_t m_ms = 0;
-        uint64_t m_next = 0;
-        std::function<void()> m_cb;
-        TimerManager *m_manager = nullptr;
+        bool m_recurring = false;               /// 是否是循环定时器
+        uint64_t m_ms = 0;                      /// 执行周期
+        uint64_t m_next = 0;                    /// 下一次执行的准确时间
+        std::function<void()> m_cb;             /// 回调函数
+        TimerManager *m_manager = nullptr;      /// 定时器管理器
     private:
         struct Comparator {
             bool operator()(const Timer::ptr &lhs, const Timer::ptr &rhs) const;
