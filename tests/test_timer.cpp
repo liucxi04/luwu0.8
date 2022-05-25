@@ -2,13 +2,6 @@
 // Created by liucxi on 2022/4/27.
 //
 
-/**
- * @file test_timer.cc
- * @brief IO协程测试器定时器测试
- * @version 0.1
- * @date 2021-06-19
- */
-
 #include "luwu.h"
 #include "timer.h"
 

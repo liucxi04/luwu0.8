@@ -67,19 +67,31 @@ namespace liucxi {
 
         Timer::ptr addTimer(uint64_t ms, std::function<void()> cb, bool recurring = false);
 
+        /**
+         * @brief 添加条件定时器
+         * @param ms 定时器执行间隔时间
+         * @param cb 定时器回调函数
+         * @param weak_cond 条件
+         * @param recurring 是否循环
+         */
         Timer::ptr addConditionTimer(uint64_t ms, const std::function<void()> &cb,
                                      const std::weak_ptr<void> &weak_cond, bool recurring = false);
 
+        /**
+         * @brief 到最近一个定时器执行的时间间隔
+         * @return
+         */
         uint64_t getNextTimer();
 
+        /**
+         * @brief 获得所有需要执行的定时器的回调函数列表
+         */
         void listExpiredCb(std::vector<std::function<void()>> &cbs);
 
     protected:
         virtual void onTimerInsertAtFront() = 0;
 
         void addTimer(const Timer::ptr &val, RWMutexType::WriteLock lock);
-
-        bool hasTimer();
 
     private:
         RWMutexType m_mutex;

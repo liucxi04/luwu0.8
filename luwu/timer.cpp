@@ -103,11 +103,6 @@ namespace liucxi {
         }
     }
 
-    bool TimerManager::hasTimer() {
-        RWMutexType::ReadLock lock(m_mutex);
-        return m_timers.empty();
-    }
-
     static void OnTimer(const std::weak_ptr<void> &weak_cond, const std::function<void()> &cb) {
         std::shared_ptr<void> tmp = weak_cond.lock();
         if (tmp) {
