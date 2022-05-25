@@ -4,11 +4,9 @@
 
 #include "iomanager.h"
 #include "macro.h"
-#include "log.h"
 
 #include <cerrno>
 #include <cstring>
-#include <utility>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/epoll.h>

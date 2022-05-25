@@ -8,10 +8,9 @@
 #include <memory>
 #include <vector>
 #include <functional>
-#include "fiber.h"
-#include "scheduler.h"
-#include "mutex.h"
+
 #include "timer.h"
+#include "scheduler.h"
 
 namespace liucxi {
     class IOManager : public Scheduler, public TimerManager{
