@@ -17,8 +17,13 @@ set(SRC
         luwu/fiber.cpp
         luwu/scheduler.cpp
         luwu/iomanager.cpp
-        luwu/timer.cpp)
+        luwu/timer.cpp
+        luwu/hook.cpp
+        luwu/fd_manager.cpp)
+
 add_library(luwu SHARED ${SRC})
+
+
 add_executable(log tests/test_log.cpp)
 add_dependencies(log luwu)
 target_link_libraries(log luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
@@ -50,3 +55,7 @@ target_link_libraries(iomanager luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICE
 add_executable(test_timer tests/test_timer.cpp)
 add_dependencies(test_timer luwu)
 target_link_libraries(test_timer luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+
+add_executable(test_hook tests/test_hook.cpp)
+add_dependencies(test_hook luwu)
+target_link_libraries(test_hook luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)

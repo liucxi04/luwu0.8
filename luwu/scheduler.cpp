@@ -3,6 +3,7 @@
 //
 
 #include <utility>
+#include "hook.h"
 #include "macro.h"
 #include "scheduler.h"
 
@@ -139,6 +140,8 @@ namespace liucxi {
      * @details caller 线程的调度协程不是主协程，其他线程的调度协程就是主协程
      */
     void Scheduler::run() {
+        /// 需要 hook
+        set_hook_enable(true);
         setThis();
         /// 当前线程不是调度器所在的线程，所以线程的主协程需要初始化，调度协程也需要初始化
         if (getThreadId() != m_rootThread) {
