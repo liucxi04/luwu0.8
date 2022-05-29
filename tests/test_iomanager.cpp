@@ -87,14 +87,10 @@ void test_io() {
     }
 }
 
-void test_iomanager() {
-    liucxi::IOManager iom(1, false);
-    // liucxi::IOManager iom(10); // 演示多线程下IO协程在不同线程之间切换
+int main() {
+    liucxi::IOManager iom;
+//     liucxi::IOManager iom(3); // 演示多线程下IO协程在不同线程之间切换
     iom.scheduler(test_io);
-}
-
-int main(int argc, char *argv[]) {
-    test_iomanager();
     return 0;
 }
 

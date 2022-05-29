@@ -91,7 +91,7 @@ namespace liucxi {
     protected:
         virtual void onTimerInsertAtFront() = 0;
 
-        void addTimer(const Timer::ptr &val, RWMutexType::WriteLock lock);
+        void addTimer(const Timer::ptr &val, RWMutexType::WriteLock &lock);
 
     private:
         RWMutexType m_mutex;

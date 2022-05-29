@@ -9,7 +9,7 @@ logs:
     appenders:
       - type: StdoutLogAppender
       - type: FileLogAppender
-        file: ../logs/system.txt
+        file: /home/liucxi/Documents/luwu/logs/system.txt
   - name: http
     level: DEBUG
     appenders:

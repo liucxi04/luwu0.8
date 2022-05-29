@@ -1,6 +1,7 @@
 //
 // Created by liucxi on 2022/4/26.
 //
+
 #include "timer.h"
 #include "utils.h"
 
@@ -90,7 +91,7 @@ namespace liucxi {
         return timer;
     }
 
-    void TimerManager::addTimer(const Timer::ptr &val, RWMutexType::WriteLock lock) {
+    void TimerManager::addTimer(const Timer::ptr &val, RWMutexType::WriteLock &lock) {
         auto it = m_timers.insert(val).first;
         bool at_front = (it == m_timers.begin()) && !m_tickled;
         if (at_front) {
@@ -142,18 +143,23 @@ namespace liucxi {
         }
 
         RWMutexType::WriteLock lock(m_mutex);
+        if(m_timers.empty()) {
+            return;
+        }
         Timer::ptr now_timer(new Timer(now_ms));
         auto it = m_timers.upper_bound(now_timer);
         expired.insert(expired.begin(), m_timers.begin(), it);
-        cbs.resize(expired.size());
+        cbs.reserve(expired.size());
 
         for (auto &timer: expired) {
             cbs.push_back(timer->m_cb);
             if (timer->m_recurring) {
+                m_timers.erase(timer);
                 timer->m_next = now_ms + timer->m_ms;
                 m_timers.insert(timer);
             } else {
-                timer->m_cb = nullptr;
+                m_timers.erase(timer);
+//                timer->m_cb = nullptr;
             }
         }
     }

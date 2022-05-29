@@ -2,6 +2,8 @@
 // Created by liucxi on 2022/4/27.
 //
 
+#include <iostream>
+#include "ready.h"
 #include "luwu.h"
 #include "timer.h"
 
@@ -20,25 +22,17 @@ void timer_callback() {
     }
 }
 
-void test_timer() {
+int main() {
     liucxi::IOManager iom;
 
     // 循环定时器
-    s_timer = iom.addTimer(10, timer_callback, true);
-
+    s_timer = iom.addTimer(1000, timer_callback, true);
     // 单次定时器
-    iom.addTimer(50, []{
+    iom.addTimer(500, []{
         LUWU_LOG_INFO(g_logger) << "500ms timeout";
     });
-    iom.addTimer(50, []{
+    iom.addTimer(5000, []{
         LUWU_LOG_INFO(g_logger) << "5000ms timeout";
     });
-}
-
-int main(int argc, char *argv[]) {
-    test_timer();
-
-    LUWU_LOG_INFO(g_logger) << "end";
-
     return 0;
 }
