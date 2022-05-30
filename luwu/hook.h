@@ -55,13 +55,15 @@ extern send_fun send_f;
 typedef int (*fcntl_fun)(int fd, int cmd, ... /* arg */);
 extern fcntl_fun fcntl_f;
 
-typedef int (*ioctl_fun)(int d, int request, ...);
+typedef int (*ioctl_fun)(int fd, unsigned long int request, ...);
 extern ioctl_fun ioctl_f;
 
 typedef int (*getsockopt_fun)(int sockfd, int level, int optname, void *optval, socklen_t *optlen);
 extern getsockopt_fun getsockopt_f;
 
-typedef int (*setsockopt_fun)(int sockfd, int level, int optname, const void *optval, socklen_t *optlen);
+typedef int (*setsockopt_fun)(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
 extern setsockopt_fun setsockopt_f;
+
+//extern int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addlen, uint64_t timeout);
 }
 #endif //LUWU_HOOK_H

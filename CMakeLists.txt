@@ -50,7 +50,7 @@ target_link_libraries(scheduler luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICE
 
 add_executable(iomanager tests/test_iomanager.cpp)
 add_dependencies(iomanager luwu)
-target_link_libraries(iomanager luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+target_link_libraries(iomanager luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
 
 add_executable(test_timer tests/test_timer.cpp)
 add_dependencies(test_timer luwu)

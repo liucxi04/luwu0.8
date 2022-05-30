@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "mutex.h"
+#include "utils.h"
 
 namespace liucxi {
     class FdContext : public std::enable_shared_from_this<FdContext> {
@@ -20,8 +21,6 @@ namespace liucxi {
         ~FdContext() = default;
 
         bool init();
-
-        bool close();
 
         bool isInit() const { return m_isInit; }
 
@@ -39,7 +38,7 @@ namespace liucxi {
 
         void setTimeout(int type, uint64_t v);
 
-        uint64_t getTimeout(int type);
+        uint64_t getTimeout(int type) const;
 
     private:
         bool m_isInit:1;
@@ -67,5 +66,7 @@ namespace liucxi {
         RWMutexType m_mutex;
         std::vector<FdContext::ptr> m_fds;
     };
+
+    typedef Singleton<FdManager> FdMgr;
 }
 #endif //LUWU_FD_MANAGER_H
