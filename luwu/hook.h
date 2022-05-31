@@ -19,6 +19,11 @@ namespace liucxi {
 extern "C" {
 // sleep
 typedef unsigned int (*sleep_fun)(unsigned int seconds);
+/**
+ * @details 指在其他文件有一个 sleep_fun 类型的 sleep_f，
+ * 即在 hook.cpp 文件还有一个函数指针 sleep_f，和 sleep_fun 函数指针签名相同
+ * sleep_f 指向原始系统调用，sleep_fun 用来定义函数签名，下同。
+ */
 extern sleep_fun sleep_f;
 
 typedef int (*usleep_fun)(useconds_t usec);

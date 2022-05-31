@@ -27,6 +27,7 @@ namespace liucxi {
         m_sendTimeout = -1;
 
         struct stat fd_stat{};
+        // fstat: 由文件描述符取得文件状态
         if (fstat(m_fd, &fd_stat) == -1) {
             m_isInit = false;
             m_isSocket = false;
@@ -36,6 +37,7 @@ namespace liucxi {
         }
 
         if (m_isSocket) {
+            // fcntl_f() 原始系统调用的别名
             int flags = fcntl_f(m_fd, F_GETFL, 0);
             if (!(flags & O_NONBLOCK)) {
                 fcntl_f(m_fd, F_SETFL, flags | O_NONBLOCK);
@@ -74,18 +76,33 @@ namespace liucxi {
         if (fd == -1) {
             return nullptr;
         }
+        /**
+         * 一共三种情况：
+         *
+         * 1 - 超界，自动创建
+         *     不超界，无值，自动创建
+         *
+         * 2 - 超界，不自动创建             nullptr
+         *
+         * 3 - 不超界，有值                m_fds[fd]
+         *     不超界，无值，不自动创建      m_fds[fd]，里面是 nullptr
+         *
+         */
         RWMutexType::ReadLock lock(m_mutex);
         if ((int)m_fds.size() <= fd) {
             if (!auto_create) {
+                // 情况2
                 return nullptr;
             }
         } else {
             if (m_fds[fd] || !auto_create) {
+                // 情况3
                 return m_fds[fd];
             }
         }
         lock.unlock();
 
+        // 情况1
         RWMutexType::WriteLock lock1(m_mutex);
         FdContext::ptr ctx(new FdContext(fd));
         if (fd >= (int)m_fds.size()) {

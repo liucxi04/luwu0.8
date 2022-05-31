@@ -2,7 +2,6 @@
 // Created by liucxi on 2022/5/29.
 //
 #include "hook.h"
-
 #include "fiber.h"
 //#include "macro.h"
 #include "config.h"
@@ -50,6 +49,12 @@ namespace liucxi {
         if (is_init) {
             return;
         }
+        /**
+         *  ## 用于字符串链接、 # 表示是一个字符串
+         *  以下宏展开类似于
+         *  sleep_f = (sleep_fun)dlsym(RTLD_NEXT, "sleep");
+         *  usleep_f = (usleep_fun)dlsym(RTLD_NEXT, "usleep"); \
+         */
 #define XX(name) name ## _f = (name ## _fun)dlsym(RTLD_NEXT, #name);
         HOOK_FUN(XX)
 #undef XX
@@ -67,7 +72,8 @@ namespace liucxi {
             });
         }
     };
-
+    /// 全局变量会在 main 函数之前被初始化，完成 hook_init 和 加载配置文件
+    /// 在 main 函数运行之前就会获取各个符号的地址并保存在全局变量中
     static HookInit s_hook_init;
 }
 
@@ -144,9 +150,17 @@ static ssize_t do_io(int fd, OriginFun fun, const char *hook_fun_name,
     return n;
 }
 
+/**
+ * 接口的 hook 实现，要放在 extern "C" 中，以防止 C++ 编译器对符号名称添加修饰。
+ */
 extern "C" {
+/**
+ *  初始化
+ *  sleep_fun sleep_f = nullptr;
+ *  usleep_fun usleep_f = nullptr;
+ */
 #define XX(name) name ## _fun name ## _f = nullptr;
-HOOK_FUN(XX)
+        HOOK_FUN(XX)
 #undef XX
 
 unsigned int sleep(unsigned int seconds) {
@@ -201,10 +215,12 @@ int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addl
         return connect_f(sockfd, addr, addlen);
     }
 
-    int n = connect_f(sockfd, addr, addlen);
+    int n = connect_f(sockfd, addr, addlen); // 这里的 sockfd 是非阻塞的
     if (n == 0) {
         return 0;
     } else if (n != -1 || errno != EINPROGRESS) {
+        // 链接正常，或者 n == -1 但是 errno == EINPROGRESS，表示连接还在进行中
+        // 后面可以通过 epoll 来判断 socket 是否可写，如果可以写，说明连接完成了。
         return n;
     }
 
