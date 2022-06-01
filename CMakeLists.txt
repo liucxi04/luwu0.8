@@ -19,7 +19,8 @@ set(SRC
         luwu/iomanager.cpp
         luwu/timer.cpp
         luwu/hook.cpp
-        luwu/fd_manager.cpp)
+        luwu/fd_manager.cpp
+        luwu/address.cpp)
 
 add_library(luwu SHARED ${SRC})
 
@@ -59,3 +60,7 @@ target_link_libraries(test_timer luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIC
 add_executable(test_hook tests/test_hook.cpp)
 add_dependencies(test_hook luwu)
 target_link_libraries(test_hook luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(test_address tests/test_address.cpp)
+add_dependencies(test_address luwu)
+target_link_libraries(test_address luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
