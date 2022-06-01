@@ -78,7 +78,7 @@ namespace liucxi {
 }
 
 struct timer_info {
-    bool cancelled = false;
+    int cancelled = 0;
 };
 
 template<typename OriginFun, typename ... Args>
@@ -116,6 +116,7 @@ static ssize_t do_io(int fd, OriginFun fun, const char *hook_fun_name,
         std::weak_ptr<timer_info> winfo(tinfo);
         liucxi::Timer::ptr timer;
 
+        // 如果设置了超时时间
         if (timeout != -1) {
             timer = iom->addConditionTimer(timeout, [winfo, fd, iom, event]() {
                 auto t = winfo.lock();
@@ -128,14 +129,7 @@ static ssize_t do_io(int fd, OriginFun fun, const char *hook_fun_name,
         }
 
         int rt = iom->addEvent(fd, (liucxi::IOManager::Event) (event));
-        if (!rt) {
-            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << hook_fun_name << " addEvent("
-                                                    << fd << " ," << event << ")";
-            if (timer) {
-                timer->cancel();
-            }
-            return -1;
-        } else {
+        if (rt) {
             liucxi::Fiber::GetThis()->yield();
             if (timer) {
                 timer->cancel();
@@ -145,6 +139,13 @@ static ssize_t do_io(int fd, OriginFun fun, const char *hook_fun_name,
                 return -1;
             }
             goto retry;
+        } else {
+            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << hook_fun_name << " addEvent("
+                                                    << fd << " ," << event << ")";
+            if (timer) {
+                timer->cancel();
+            }
+            return -1;
         }
     }
     return n;
@@ -219,33 +220,38 @@ int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addl
     if (n == 0) {
         return 0;
     } else if (n != -1 || errno != EINPROGRESS) {
-        // 链接正常，或者 n == -1 但是 errno == EINPROGRESS，表示连接还在进行中
-        // 后面可以通过 epoll 来判断 socket 是否可写，如果可以写，说明连接完成了。
+        // 连接正常，或者不是连接正在进行的情况
         return n;
     }
 
+    // n == -1 && errno == EINPROGRESS，表示连接还在进行中
+    // 后面可以通过 epoll 来判断 socket 是否可写，如果可以写，说明连接完成了。
     liucxi::IOManager *iom = liucxi::IOManager::GetThis();
     liucxi::Timer::ptr timer;
     std::shared_ptr<timer_info> tinfo(new timer_info);
     std::weak_ptr<timer_info> winfo(tinfo);
 
+    // 如果设置了超时参数，那么添加一个条件定时器
     if (timeout != -1) {
         timer = iom->addConditionTimer(timeout, [winfo, iom, sockfd](){
-           auto t = winfo.lock();
+            auto t = winfo.lock();
             if (!t || t->cancelled) {
                 return;
             }
+            // 设置超时标志并触发一次 WRITE 事件
             t->cancelled = ETIMEDOUT;
-            iom->cancelEvent(sockfd, liucxi::IOManager::WRITE);
+            iom->cancelEvent(sockfd, liucxi::IOManager::WRITE);     /// ???
         }, winfo);
     }
 
     bool rt = iom->addEvent(sockfd, liucxi::IOManager::WRITE);
     if (rt) {
         liucxi::Fiber::GetThis()->yield();
+        // 如果是套接字可写，那么直接取消定时器
         if (timer) {
             timer->cancel();
         }
+        // 如果是超时了，那么设置错误信息并返回
         if (tinfo->cancelled) {
             errno = tinfo->cancelled;
             return -1;
@@ -258,6 +264,7 @@ int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addl
             << sockfd << ", WRITE) error";
     }
 
+    // 走到这是套接字可写或者是添加写事件失败
     int error = 0;
     socklen_t len = sizeof(int);
     if (-1 == getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len)) {
@@ -292,6 +299,7 @@ int close(int fd) {
     if (ctx) {
         auto iom = liucxi::IOManager::GetThis();
         if (iom) {
+            // 需要取消掉 fd 上的全部事件
             iom->cancelAll(fd);
         }
         liucxi::FdMgr::getInstance()->del(fd);
