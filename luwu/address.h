@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -14,9 +15,23 @@
 #include <arpa/inet.h>
 
 namespace liucxi {
+
+    class IPAddress;
+
     class Address {
     public:
         typedef std::shared_ptr<Address> ptr;
+
+        static Address::ptr Create(const sockaddr *addr, socklen_t addlen);
+
+        static bool Lookup(std::vector<Address> &results,
+                           const std::string &host, int family = AF_UNSPEC, int type = 0, int protocol = 0);
+
+        static Address::ptr LookupAny(const std::string &host, int family = AF_UNSPEC,
+                                      int type = 0, int protocol = 0);
+
+        static IPAddress::ptr LookupAnyIPAddress(const std::string &host, int family = AF_UNSPEC,
+                                                 int type = 0, int protocol = 0);
 
         ~Address() = default;
 
@@ -41,6 +56,8 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<IPAddress> ptr;
 
+        static IPAddress::ptr Create(const char *address, uint16_t port = 0);
+
         virtual IPAddress::ptr broadcastAddress(uint32_t prefix_len) = 0;
 
         virtual IPAddress::ptr networkAddress(uint32_t prefix_len) = 0;
@@ -55,6 +72,10 @@ namespace liucxi {
     class IPv4Address : public IPAddress {
     public:
         typedef std::shared_ptr<IPv4Address> ptr;
+
+        static IPv4Address::ptr Create(const char *address, uint16_t port = 0);
+
+        IPv4Address();
 
         explicit IPv4Address(const sockaddr_in &addr);
 
@@ -84,9 +105,13 @@ namespace liucxi {
     public:
         typedef std::shared_ptr<IPv6Address> ptr;
 
+        static IPv6Address::ptr Create(const char *address, uint16_t port = 0);
+
         IPv6Address();
 
-        IPv6Address(const sockaddr_in6 &addr);
+        explicit IPv6Address(const sockaddr_in6 &addr);
+
+        explicit IPv6Address(const uint8_t address[16], uint16_t port = 0);
 
         explicit IPv6Address(const char *address, uint16_t port = 0);
 
@@ -132,6 +157,8 @@ namespace liucxi {
     class UnknownAddress : public Address {
     public:
         typedef std::shared_ptr<UnknownAddress> ptr;
+
+        explicit UnknownAddress(const sockaddr &addr);
 
         explicit UnknownAddress(int family);
 

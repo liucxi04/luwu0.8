@@ -3,6 +3,7 @@
 //
 #include "address.h"
 #include "utils.h"
+#include "macro.h"
 
 #include <memory>
 #include <sstream>
@@ -12,6 +13,90 @@ namespace liucxi {
     template<typename T>
     static T CreateMask(uint32_t bits) {
         return (1 << (sizeof(T) * 8 - bits)) - 1;
+    }
+
+    Address::ptr Address::Create(const sockaddr *addr, socklen_t addlen) {
+        if (addr == nullptr) {
+            return nullptr;
+        }
+
+        Address::ptr rt;
+        switch (addr.sin_family) {
+            case AF_INET:
+                rt.reset(new IPv4Address(*(const sockaddr_in *) addr));
+                break;
+            case AF_INET6:
+                rt.reset(new IPv6Address(*(const sockaddr_in6 *) addr));
+                break;
+            default:
+                re.reset(new UnknownAddress(*addr));
+                break;
+        }
+        return rt;
+    }
+
+    bool Address::Lookup(std::vector <Address> &results,
+                         const std::string &host, int family, int type, int protocol) {
+        addrinfo hints, *results, *next;
+        hints.ai_flags = 0;
+        hints.ai_family = family;
+        hints.ai_socktype = type;
+        hints.ai_protocol = protocol;
+        hints.ai_addrlen = 0;
+        hints.ai_canonname = NULL;
+        hints.ai_addr = NULL;
+        hints.ai_next = NULL;
+
+        std::string node;
+        const char *service = NULL;
+
+        if (!host.empty() && host[0] == '[') {
+            const char *endipv6 = (const char *) memchr(host.c_str(), ']', host.size() - 1);
+            if (endipv6) {
+                if (*(endipv6 + 1) == ':') {
+                    service = endipv6 + 2;
+                }
+                node = host.substr(1, endipv6 - host.c_str() - 1);
+            }
+        }
+
+        if (node.empty()) {
+            service = (const char *) memchr(host.c_str(), ':', host.size());
+            if (service) {
+                if (!memchr(service + 1, ':', host.c_str() + host.size() - service - 1)) {
+                    node = host.substr(0, service - host.c_str());
+                    ++service;
+                }
+            }
+        }
+
+        if (node.empty()) {
+            node = host;
+        }
+        int error = getaddrinfo(node.c_str(), service, &hints, &results);
+        if (error) {
+            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "Address::Lookup getaddress(" << host << ","
+                                                    << family << "," << type << ") err=" << error << "errstr="
+                                                    << gai_strerror(error);
+            return false;
+        }
+
+        next = results;
+        while (next) {
+            result.push_back(Create(next->ai_addr, (socketlen_t)next->ai_addrlen));
+            next = next->ai_next;
+        }
+
+        freeaddrinfo(results);
+        return !result.empty();
+    }
+
+    Address::ptr Address::LookupAny(const std::string &host, int family, int type, int protocol) {
+
+    }
+
+    IPAddress::ptr Address::LookupAnyIPAddress(const std::string &host, int family, int type, int protocol) {
+
     }
 
     int Address::getFamily() const {
@@ -48,6 +133,52 @@ namespace liucxi {
         return !(*this == rhs);
     }
 
+    IPAddress::ptr IPAddress::Create(const char *address, uint16_t port) {
+        addrinfo hints, *results;
+        memset(&hints, 0, sizeof(hints));
+
+        hints.ai_flags = AI_NUMERICHOST;
+        hints.ai_family = AF_UNSPEC;
+
+        int error = getaddrinfo(address, NULL, &hints, &results);
+        if (error) {
+            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "IPAddress::Create(" << address << ", " << port << ") error="
+            errno << " errstr=" << strerror(errno);
+            return nullptr;
+        }
+
+        try {
+            IPAddress::ptr rt = std::dynamic_pointer_cast<IPAddress>(Address::Create(results->ai_addr,
+                                                                                     (socklen_t)->ai_addrlen));
+            if (rt) {
+                rt->setPort(port);
+            }
+            freeaddrinfo(results);
+            return rt;
+        } catch (...) {
+            freeaddrinfo(port);
+            return nullptr;
+        }
+    }
+
+    IPv4Address::ptr IPv4Address::Create(const char *address, uint16_t port) {
+        IPv4Address::ptr addr(new IPv4Address);
+        addr.m_addr.sin_port = byteSwapOnLittleEndian(port);
+        int rt = inet_pton(AF_INET, address, &addr.m_addr.sin_addr);
+        if (rt <= 0) {
+            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "IPv4Address::Create(" << address << ","
+                                                    << port << ") rt = " << rt << " errno=" << errno << " errstr="
+                                                    << strerror(errno);
+            return nullptr;
+        }
+        return addr;
+    }
+
+    IPv4Address::IPv4Address() {
+        memset(&m_addr, 0, sizeof(m_addr));
+        m_addr.sin_family = AF_INET;
+    }
+
     IPv4Address::IPv4Address(const sockaddr_in &addr) {
         m_addr = addr;
     }
@@ -60,7 +191,7 @@ namespace liucxi {
     }
 
     const sockaddr *IPv4Address::getAddr() const {
-        return (sockaddr *) &m_addr;
+        return (sockaddr * ) & m_addr;
     }
 
     socklen_t IPv4Address::getAddrLen() const {
@@ -117,6 +248,19 @@ namespace liucxi {
         m_addr.sin_port = byteSwapOnLittleEndian(p);
     }
 
+    IPv6Address::ptr IPv6Address::Create(const char *address, int port) {
+        IPv6Address::ptr addr(new IPv6Address);
+        addr.m_addr.sin6_port = byteSwapOnLittleEndian(port);
+        int rt = inet_pton(AF_INET6, address, &addr.m_addr.sin6_addr);
+        if (rt <= 0) {
+            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "IPv6Address::Create(" << address << ","
+                                                    << port << ") rt = " << rt << " errno=" << errno << " errstr="
+                                                    << strerror(errno);
+            return nullptr;
+        }
+        return addr;
+    }
+
     IPv6Address::IPv6Address() {
         memset(&m_addr, 0, sizeof(m_addr));
         m_addr.sin6_family = AF_INET6;
@@ -124,6 +268,13 @@ namespace liucxi {
 
     IPv6Address::IPv6Address(const sockaddr_in6 &addr) {
         m_addr = addr;
+    }
+
+    IPv6Address::IPv6Address(const uint8_t address[16], uint16_t port) {
+        memset(&m_addr, 0, sizeof(m_addr));
+        m_addr.sin6_family = AF_INET6;
+        m_addr.sin6_port = byteSwapOnLittleEndian(port);
+        memcpy(&m_addr.sin6_addr.s6_addr, address, 16);
     }
 
     IPv6Address::IPv6Address(const char *address, uint16_t port) {
@@ -134,7 +285,7 @@ namespace liucxi {
     }
 
     const sockaddr *IPv6Address::getAddr() const {
-        return (sockaddr *) &m_addr;
+        return (sockaddr * ) & m_addr;
     }
 
     socklen_t IPv6Address::getAddrLen() const {
@@ -143,13 +294,13 @@ namespace liucxi {
 
     std::ostream &IPv6Address::insert(std::ostream &os) const {
         os << "[";
-        auto addr = (uint16_t*)m_addr.sin6_addr.s6_addr;
+        auto addr = (uint16_t *) m_addr.sin6_addr.s6_addr;
         bool used_zeros = false;
         for (size_t i = 0; i < 8; ++i) {
             if (addr[i] == 0 && !used_zeros) {
                 continue;
             }
-            if (i && addr[i-1] == 0 && !used_zeros) {
+            if (i && addr[i - 1] == 0 && !used_zeros) {
                 os << ":";
                 used_zeros = true;
             }
@@ -203,7 +354,7 @@ namespace liucxi {
         m_addr.sin6_port = byteSwapOnLittleEndian(p);
     }
 
-    static const size_t MAX_PATH_LENGTH = sizeof(((sockaddr_un*)nullptr)->sun_path) - 1;
+    static const size_t MAX_PATH_LENGTH = sizeof(((sockaddr_un *) nullptr)->sun_path) - 1;
 
     UnixAddress::UnixAddress() {
         memset(&m_addr, 0, sizeof(m_addr));
@@ -229,7 +380,7 @@ namespace liucxi {
     }
 
     const sockaddr *UnixAddress::getAddr() const {
-        return (sockaddr*)&m_addr;
+        return (sockaddr * ) & m_addr;
     }
 
     socklen_t UnixAddress::getAddrLen() const {
@@ -238,15 +389,19 @@ namespace liucxi {
 
     std::ostream &UnixAddress::insert(std::ostream &os) const {
         if (m_length > offsetof(sockaddr_un, sun_path)
-                && m_addr.sun_path[0] == '\0') {
+            && m_addr.sun_path[0] == '\0') {
             return os << "\\0" << std::string(m_addr.sun_path + 1,
                                               m_length - offsetof(sockaddr_un, sun_path) - 1);
         }
         return os << m_addr.sun_path;
     }
 
+    UnknownAddress::UnknownAddress(const int &addr) {
+        m_addr = addr;
+    }
+
     UnknownAddress::UnknownAddress(int family) {
-        memset(&m_addr, 0 , sizeof(m_addr));
+        memset(&m_addr, 0, sizeof(m_addr));
         m_addr.sa_family = family;
     }
 
