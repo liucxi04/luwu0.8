@@ -63,4 +63,4 @@ target_link_libraries(test_hook luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICE
 
 add_executable(test_address tests/test_address.cpp)
 add_dependencies(test_address luwu)
-target_link_libraries(test_address luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+target_link_libraries(test_address luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)

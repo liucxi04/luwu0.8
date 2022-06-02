@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <arpa/inet.h>
+#include <map>
 
 namespace liucxi {
 
@@ -24,15 +25,20 @@ namespace liucxi {
 
         static Address::ptr Create(const sockaddr *addr, socklen_t addlen);
 
-        static bool Lookup(std::vector<Address> &results,
+        static bool Lookup(std::vector<Address::ptr> &results,
                            const std::string &host, int family = AF_UNSPEC, int type = 0, int protocol = 0);
 
         static Address::ptr LookupAny(const std::string &host, int family = AF_UNSPEC,
                                       int type = 0, int protocol = 0);
 
-        static IPAddress::ptr LookupAnyIPAddress(const std::string &host, int family = AF_UNSPEC,
-                                                 int type = 0, int protocol = 0);
+        static std::shared_ptr<IPAddress> LookupAnyIPAddress(const std::string &host, int family = AF_UNSPEC,
+                                                             int type = 0, int protocol = 0);
 
+        static bool GetInterfaceAddress(std::multimap<std::string, std::pair<Address::ptr, uint32_t>> &results,
+                                        int family = AF_UNSPEC);
+
+        static bool GetInterfaceAddress(std::vector<std::pair<Address::ptr, uint32_t>> &results,
+                                        const std::string &face, int family = AF_UNSPEC);
         ~Address() = default;
 
         int getFamily() const;
@@ -74,8 +80,6 @@ namespace liucxi {
         typedef std::shared_ptr<IPv4Address> ptr;
 
         static IPv4Address::ptr Create(const char *address, uint16_t port = 0);
-
-        IPv4Address();
 
         explicit IPv4Address(const sockaddr_in &addr);
 
