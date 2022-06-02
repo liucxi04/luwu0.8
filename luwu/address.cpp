@@ -47,7 +47,7 @@ namespace liucxi {
         return rt;
     }
 
-    bool Address::Lookup(std::vector <Address::ptr> &results,
+    bool Address::Lookup(std::vector<Address::ptr> &results,
                          const std::string &host, int family, int type, int protocol) {
         addrinfo hints{}, *result, *next;
         hints.ai_flags = 0;
@@ -95,7 +95,7 @@ namespace liucxi {
 
         next = result;
         while (next) {
-            results.push_back(Create(next->ai_addr, (socklen_t)next->ai_addrlen));
+            results.push_back(Create(next->ai_addr, (socklen_t) next->ai_addrlen));
             next = next->ai_next;
         }
 
@@ -105,7 +105,7 @@ namespace liucxi {
 
     Address::ptr Address::LookupAny(const std::string &host, int family, int type, int protocol) {
         std::vector<Address::ptr> result;
-        if(Lookup(result, host, family, type, protocol)) {
+        if (Lookup(result, host, family, type, protocol)) {
             return result[0];
         }
         return nullptr;
@@ -114,7 +114,7 @@ namespace liucxi {
     IPAddress::ptr Address::LookupAnyIPAddress(const std::string &host, int family, int type, int protocol) {
         std::vector<Address::ptr> result;
         if (Lookup(result, host, family, type, protocol)) {
-            for (auto &i : result) {
+            for (auto &i: result) {
                 IPAddress::ptr v = std::dynamic_pointer_cast<IPAddress>(i);
                 if (v) {
                     return v;
@@ -125,11 +125,11 @@ namespace liucxi {
     }
 
     bool Address::GetInterfaceAddress(std::multimap<std::string,
-                                                    std::pair<Address::ptr, uint32_t>> &results, int family) {
+            std::pair<Address::ptr, uint32_t>> &results, int family) {
         struct ifaddrs *result, *next;
         if (getifaddrs(&result) != 0) {
             LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "Address::GetInterfaceAddress getifaddrs "
-                    << "err=" << errno << " errstr=" << strerror(errno);
+                                                    << "err=" << errno << " errstr=" << strerror(errno);
             return false;
         }
 
@@ -141,17 +141,15 @@ namespace liucxi {
                     continue;
                 }
                 switch (next->ifa_addr->sa_family) {
-                    case AF_INET:
-                    {
+                    case AF_INET: {
                         addr = Create(next->ifa_addr, sizeof(sockaddr_in));
-                        uint32_t netmask = ((sockaddr_in*)next->ifa_netmask)->sin_addr.s_addr;
+                        uint32_t netmask = ((sockaddr_in *) next->ifa_netmask)->sin_addr.s_addr;
                         prefix_length = CountBytes(netmask);
                         break;
                     }
-                    case AF_INET6:
-                    {
+                    case AF_INET6: {
                         addr = Create(next->ifa_addr, sizeof(sockaddr_in6));
-                        in6_addr &netmask = ((sockaddr_in6*)next->ifa_netmask)->sin6_addr;
+                        in6_addr &netmask = ((sockaddr_in6 *) next->ifa_netmask)->sin6_addr;
                         prefix_length = 0;
                         for (int i = 0; i < 16; ++i) {
                             prefix_length += CountBytes(netmask.s6_addr[i]);
@@ -188,7 +186,7 @@ namespace liucxi {
         }
 
         std::multimap<std::string, std::pair<Address::ptr, uint32_t>> result;
-        if(!GetInterfaceAddress(result, family)) {
+        if (!GetInterfaceAddress(result, family)) {
             return false;
         }
         auto it = result.equal_range(face);
@@ -242,13 +240,13 @@ namespace liucxi {
         int error = getaddrinfo(address, nullptr, &hints, &results);
         if (error) {
             LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "IPAddress::Create(" << address << ", " << port << ") error="
-            << errno << " errstr=" << strerror(errno);
+                                                    << errno << " errstr=" << strerror(errno);
             return nullptr;
         }
 
         try {
             IPAddress::ptr rt = std::dynamic_pointer_cast<IPAddress>(Address::Create(
-                    results->ai_addr, (socklen_t)results->ai_addrlen));
+                    results->ai_addr, (socklen_t) results->ai_addrlen));
             if (rt) {
                 rt->setPort(port);
             }
@@ -285,7 +283,11 @@ namespace liucxi {
     }
 
     const sockaddr *IPv4Address::getAddr() const {
-        return (sockaddr * ) & m_addr;
+        return (sockaddr *) &m_addr;
+    }
+
+    sockaddr *IPv4Address::getAddr() {
+        return (sockaddr *) &m_addr;
     }
 
     socklen_t IPv4Address::getAddrLen() const {
@@ -379,7 +381,11 @@ namespace liucxi {
     }
 
     const sockaddr *IPv6Address::getAddr() const {
-        return (sockaddr * ) & m_addr;
+        return (sockaddr *) &m_addr;
+    }
+
+    sockaddr *IPv6Address::getAddr() {
+        return (sockaddr *) &m_addr;
     }
 
     socklen_t IPv6Address::getAddrLen() const {
@@ -474,11 +480,19 @@ namespace liucxi {
     }
 
     const sockaddr *UnixAddress::getAddr() const {
-        return (sockaddr * ) & m_addr;
+        return (sockaddr *) &m_addr;
+    }
+
+    sockaddr *UnixAddress::getAddr() {
+        return (sockaddr *) &m_addr;
     }
 
     socklen_t UnixAddress::getAddrLen() const {
         return m_length;
+    }
+
+    void UnixAddress::setAddrLen(socklen_t v) {
+        m_length = v;
     }
 
     std::ostream &UnixAddress::insert(std::ostream &os) const {
@@ -500,6 +514,10 @@ namespace liucxi {
     }
 
     const sockaddr *UnknownAddress::getAddr() const {
+        return &m_addr;
+    }
+
+    sockaddr *UnknownAddress::getAddr() {
         return &m_addr;
     }
 

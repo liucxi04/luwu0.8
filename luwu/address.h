@@ -26,24 +26,26 @@ namespace liucxi {
         static Address::ptr Create(const sockaddr *addr, socklen_t addlen);
 
         static bool Lookup(std::vector<Address::ptr> &results,
-                           const std::string &host, int family = AF_UNSPEC, int type = 0, int protocol = 0);
+                           const std::string &host, int family = AF_INET, int type = 0, int protocol = 0);
 
-        static Address::ptr LookupAny(const std::string &host, int family = AF_UNSPEC,
+        static Address::ptr LookupAny(const std::string &host, int family = AF_INET,
                                       int type = 0, int protocol = 0);
 
-        static std::shared_ptr<IPAddress> LookupAnyIPAddress(const std::string &host, int family = AF_UNSPEC,
+        static std::shared_ptr<IPAddress> LookupAnyIPAddress(const std::string &host, int family = AF_INET,
                                                              int type = 0, int protocol = 0);
 
         static bool GetInterfaceAddress(std::multimap<std::string, std::pair<Address::ptr, uint32_t>> &results,
-                                        int family = AF_UNSPEC);
+                                        int family = AF_INET);
 
         static bool GetInterfaceAddress(std::vector<std::pair<Address::ptr, uint32_t>> &results,
-                                        const std::string &face, int family = AF_UNSPEC);
+                                        const std::string &face, int family = AF_INET);
         ~Address() = default;
 
         int getFamily() const;
 
         virtual const sockaddr *getAddr() const = 0;
+
+        virtual sockaddr *getAddr() = 0;
 
         virtual socklen_t getAddrLen() const = 0;
 
@@ -87,6 +89,8 @@ namespace liucxi {
 
         const sockaddr *getAddr() const override;
 
+        sockaddr *getAddr() override;
+
         socklen_t getAddrLen() const override;
 
         std::ostream &insert(std::ostream &os) const override;
@@ -121,6 +125,8 @@ namespace liucxi {
 
         const sockaddr *getAddr() const override;
 
+        sockaddr *getAddr() override;
+
         socklen_t getAddrLen() const override;
 
         std::ostream &insert(std::ostream &os) const override;
@@ -149,7 +155,11 @@ namespace liucxi {
 
         const sockaddr *getAddr() const override;
 
+        sockaddr *getAddr() override;
+
         socklen_t getAddrLen() const override;
+
+        void setAddrLen(socklen_t v);
 
         std::ostream &insert(std::ostream &os) const override;
 
@@ -167,6 +177,8 @@ namespace liucxi {
         explicit UnknownAddress(int family);
 
         const sockaddr *getAddr() const override;
+
+        sockaddr *getAddr() override;
 
         socklen_t getAddrLen() const override;
 

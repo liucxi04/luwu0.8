@@ -10,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstdint>
 
 namespace liucxi {
     bool is_hook_enable();
@@ -69,6 +70,6 @@ extern getsockopt_fun getsockopt_f;
 typedef int (*setsockopt_fun)(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
 extern setsockopt_fun setsockopt_f;
 
-//extern int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addlen, uint64_t timeout);
+extern int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addlen, uint64_t timeout);
 }
 #endif //LUWU_HOOK_H
