@@ -1,5 +1,5 @@
 //
-// Created by liucx on 2022/6/6.
+// Created by liucxi on 2022/6/6.
 //
 
 #ifndef LUWU_HTTP_H
@@ -9,19 +9,23 @@
 #include <string>
 #include <map>
 
+#include "http-parser/http_parser.h"
+#include <boost/lexical_cast.hpp>
+
 namespace liucxi {
     namespace http {
+
         enum class HttpMethod {
 #define XX(num, name, string) name = num,
             HTTP_METHOD_MAP(XX)
-#undef
+#undef XX
             INVALID_METHOD
         };
 
         enum class HttpStatus {
 #define XX(code, name, desc) name = code,
-            HTTP_STATUS_MAP(XX
-#undef
+            HTTP_STATUS_MAP(XX)
+#undef XX
         };
 
         static HttpMethod StringToHttpMethod(const std::string &m);
@@ -36,7 +40,7 @@ namespace liucxi {
             bool operator()(const std::string &lhs, const std::string &rhs) const;
         };
 
-        template<typename T>
+        template<typename MapType, typename T>
         bool checkGetAs(const MapType &m, const std::string &key, T &val, const T &def = T()) {
             auto it = m.find(key);
             if (it == m.end()) {
@@ -51,7 +55,7 @@ namespace liucxi {
             return false;
         }
 
-        template<typename T>
+        template<typename MapType, typename T>
         T getAs(const MapType &m, const std::string &key, const T &def = T()) {
             auto it = m.find(key);
             if (it == m.end()) {
@@ -66,11 +70,11 @@ namespace liucxi {
 
         class HttpRequest {
         public:
-            typedef std::shared_ptr <HttpRequest> ptr;
+            typedef std::shared_ptr<HttpRequest> ptr;
 
-            typedef std::map <std::string, std::string, CaseInsensitiveLess> MapType;
+            typedef std::map<std::string, std::string, CaseInsensitiveLess> MapType;
 
-            HttpRequest(uint8_t version = 0x11, bool close = true);
+            explicit HttpRequest(uint8_t version = 0x11, bool close = true);
 
             HttpMethod getMethod() const { return m_method; }
 
@@ -106,23 +110,27 @@ namespace liucxi {
 
             void setCookies(const MapType &params) { m_params = params; }
 
+            bool isClose() const { return m_close; }
+
+            void setClose(bool close) { m_close = close; }
+
             std::string getHeader(const std::string &key, const std::string &def = "") const;
 
             std::string getParam(const std::string &key, const std::string &def = "") const;
 
             std::string getCookie(const std::string &key, const std::string &def = "") const;
 
-            void setHeader(const std::string &key, const std::string &val);
+            void setHeader(const std::string &key, const std::string &val) { m_headers[key] = val; }
 
-            void setParam(const std::string &key, const std::string &val);
+            void setParam(const std::string &key, const std::string &val) { m_params[key] = val; }
 
-            void setCookie(const std::string &key, const std::string &val);
+            void setCookie(const std::string &key, const std::string &val) { m_cookies[key] = val; }
 
-            void delHeader(const std::string &key);
+            void delHeader(const std::string &key) { m_headers.erase(key); }
 
-            void delParam(const std::string& key);
+            void delParam(const std::string &key) { m_params.erase(key); }
 
-            void delCookie(const std::string& key);
+            void delCookie(const std::string &key) { m_cookies.erase(key); }
 
             bool hasHeader(const std::string &key, std::string *val = nullptr);
 
@@ -160,6 +168,10 @@ namespace liucxi {
                 return getAs(m_cookies, key, def);
             }
 
+            std::string toString() const;
+
+            std::ostream &dump(std::ostream &os) const;
+
         private:
             bool m_close;
             bool m_webSocket;
@@ -178,7 +190,75 @@ namespace liucxi {
             MapType m_headers;
             MapType m_params;
             MapType m_cookies;
-        }
+        };
+
+        class HttpResponse {
+        public:
+            typedef std::shared_ptr<HttpResponse> ptr;
+            typedef std::map<std::string, std::string, CaseInsensitiveLess> MapType;
+
+            explicit HttpResponse(uint8_t version = 0x11, bool close = true);
+
+            HttpStatus getStatus() const { return m_status; }
+
+            uint8_t getVersion() const { return m_version; }
+
+            const std::string &getBody() const { return m_body; }
+
+            const std::string &getReason() const { return m_reason; }
+
+            const MapType &getHeaders() const { return m_headers; }
+
+            void setStatus(HttpStatus status) { m_status = status; }
+
+            void setVersion(uint8_t version) { m_version = version; }
+
+            void setBody(const std::string &body) { m_body = body; }
+
+            void appendBody(const std::string &body) { m_body.append(body); }
+
+            void setReason(const std::string &reason) { m_reason = reason; }
+
+            void setHeaders(const MapType &header) { m_headers = header; }
+
+            bool isClose() const { return m_close; }
+
+            void setClose(bool v) { m_close = v; }
+
+            bool isWebSocket() const { return m_webSocket; }
+
+            void setWebSocket(bool webSocket) { m_webSocket = webSocket; }
+
+            std::string getHeader(const std::string& key, const std::string& def = "") const;
+
+            void setHeader(const std::string& key, const std::string& val) { m_headers[key] = val; }
+
+            void delHeader(const std::string& key) { m_headers.erase(key); }
+
+            template<class T>
+            bool checkGetHeaderAs(const std::string& key, T& val, const T& def = T()) {
+                return checkGetAs(m_headers, key, val, def);
+            }
+
+            template<class T>
+            T getHeaderAs(const std::string& key, const T& def = T()) {
+                return getAs(m_headers, key, def);
+            }
+
+            std::ostream& dump(std::ostream& os) const;
+
+            std::string toString() const;
+
+        private:
+            HttpStatus m_status;
+            uint8_t m_version;
+            bool m_close;
+            bool m_webSocket;
+            std::string m_body;
+            std::string m_reason;
+            MapType m_headers;
+            std::vector<std::string> m_cookies;
+        };
     }
-};
+}
 #endif //LUWU_HTTP_H
