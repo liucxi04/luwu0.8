@@ -22,7 +22,8 @@ set(SRC
         luwu/fd_manager.cpp
         luwu/address.cpp
         luwu/socket.cpp
-        luwu/bytearray.cpp)
+        luwu/bytearray.cpp
+        luwu/http/http.cpp)
 
 add_library(luwu SHARED ${SRC})
 
