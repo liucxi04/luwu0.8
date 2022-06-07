@@ -115,7 +115,7 @@ void test_ipv4() {
     LUWU_LOG_INFO(g_logger) << "network addr: " << addr->networkAddress(24)->toString();
     LUWU_LOG_INFO(g_logger) << "subnet mask addr: " << addr->subnetMask(24)->toString();
 
-    LUWU_LOG_INFO(g_logger) << "\n";
+    LUWU_LOG_INFO(g_logger) << "end\n";
 }
 
 /**
@@ -137,32 +137,32 @@ void test_ipv6() {
     LUWU_LOG_INFO(g_logger) << "broadcast addr: " << addr->broadcastAddress(64)->toString();
     LUWU_LOG_INFO(g_logger) << "network addr: " << addr->networkAddress(64)->toString();
     LUWU_LOG_INFO(g_logger) << "subnet mask addr: " << addr->subnetMask(64)->toString();
-    LUWU_LOG_INFO(g_logger) << "\n";
+    LUWU_LOG_INFO(g_logger) << "end\n";
 }
 
 /**
  * @brief Unix套接字解析
  */
-//void test_unix() {
-//    LUWU_LOG_INFO(g_logger) << "test_unix";
-//
-//    auto addr = liucxi::UnixAddress((std::string &) "/tmp/test_unix.sock");
-//    LUWU_LOG_INFO(g_logger) << "addr: " << addr.toString();
-//    LUWU_LOG_INFO(g_logger) << "family: " << family2str(addr.getFamily());
-//    LUWU_LOG_INFO(g_logger) << "path: " << addr.getPath();
-//    LUWU_LOG_INFO(g_logger) << "addr length: " << addr.getAddrLen();
-//
-//    LUWU_LOG_INFO(g_logger) << "\n";
-//}
+void test_unix() {
+    LUWU_LOG_INFO(g_logger) << "test_unix";
+
+    auto addr = liucxi::UnixAddress("/tmp/test_unix.sock");
+    LUWU_LOG_INFO(g_logger) << "addr: " << addr.toString();
+    LUWU_LOG_INFO(g_logger) << "family: " << family2str(addr.getFamily());
+    LUWU_LOG_INFO(g_logger) << "path: " << addr.getPath();
+    LUWU_LOG_INFO(g_logger) << "addr length: " << addr.getAddrLen();
+
+    LUWU_LOG_INFO(g_logger) << "end\n";
+}
 
 int main(int argc, char *argv[]) {
-    // 获取本机所有网卡的IPv4地址和IPv6地址以及掩码长度
-    test_ifaces(AF_INET);
-    test_ifaces(AF_INET6);
+//    // 获取本机所有网卡的IPv4地址和IPv6地址以及掩码长度
+//    test_ifaces(AF_INET);
+//    test_ifaces(AF_INET6);
 
-    // 获取本机eth0网卡的IPv4地址和IPv6地址以及掩码长度
-    test_iface("eth0", AF_INET);
-    test_iface("eth0", AF_INET6);
+//    // 获取本机eth0网卡的IPv4地址和IPv6地址以及掩码长度
+//    test_iface("ens33", AF_INET);
+//    test_iface("ens33", AF_INET6);
 
     // ip域名服务解析
     test_lookup("127.0.0.1");
@@ -175,13 +175,13 @@ int main(int argc, char *argv[]) {
     test_lookup("www.baidu.com:80");
     test_lookup("www.baidu.com:http");
 
-    // IPv4地址类测试
-    test_ipv4();
-
-    // IPv6地址类测试
-    test_ipv6();
-
-    // Unix套接字地址类测试
+//    // IPv4地址类测试
+//    test_ipv4();
+//
+//    // IPv6地址类测试
+//    test_ipv6();
+//
+//    // Unix套接字地址类测试
 //    test_unix();
 
     return 0;
