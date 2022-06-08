@@ -2,6 +2,7 @@
 // Created by liucxi on 2022/6/7.
 //
 
+#include <iostream>
 #include "http_parser.h"
 #include "macro.h"
 #include "config.h"
@@ -145,11 +146,11 @@ namespace liucxi {
                                                        url_parser.field_data[UF_PATH].len));
             }
             if (url_parser.field_set & (1 << UF_QUERY)) {
-                parser->getData()->setPath(std::string(buf + url_parser.field_data[UF_QUERY].off,
+                parser->getData()->setQuery(std::string(buf + url_parser.field_data[UF_QUERY].off,
                                                        url_parser.field_data[UF_QUERY].len));
             }
             if (url_parser.field_set & (1 << UF_FRAGMENT)) {
-                parser->getData()->setPath(std::string(buf + url_parser.field_data[UF_FRAGMENT].off,
+                parser->getData()->setFragment(std::string(buf + url_parser.field_data[UF_FRAGMENT].off,
                                                        url_parser.field_data[UF_FRAGMENT].len));
             }
             return 0;

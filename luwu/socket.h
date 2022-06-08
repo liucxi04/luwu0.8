@@ -149,8 +149,6 @@ namespace liucxi {
         Address::ptr m_remoteAddress;       /// 远端地址
     };
 
-    std::ostream &operator<<(std::ostream &os, const Socket &socket) {
-        return socket.dump(os);
-    }
+    std::ostream &operator<<(std::ostream &os, const Socket &socket);
 }
 #endif //LUWU_SOCKET_H

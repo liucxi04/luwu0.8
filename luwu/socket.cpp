@@ -348,7 +348,7 @@ namespace liucxi {
 
     bool Socket::init(int sock) {
         FdContext::ptr ctx = FdMgr::getInstance()->get(sock);
-        if (!ctx && ctx->isSocket() && !ctx->isClose()) {
+        if (ctx && ctx->isSocket() && !ctx->isClose()) {
             m_sock = sock;
             m_isConnected = true;
             initSock();
@@ -376,6 +376,10 @@ namespace liucxi {
                                                     << " ," << m_type << " ," << m_protocol << ") errno="
                                                     << errno << " errstr=" << strerror(errno);
         }
+    }
+
+    std::ostream &operator<<(std::ostream &os, const Socket &socket) {
+        return socket.dump(os);
     }
 
 }

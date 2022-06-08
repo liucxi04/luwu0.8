@@ -460,10 +460,13 @@ namespace liucxi {
     }
 
     void ByteArray::setPosition(size_t pos) {
-        if (pos > m_size) {
+        if (pos > m_capacity) {
             throw std::out_of_range("set_position out of range");
         }
         m_position = pos;
+        if (m_position > m_size) {
+            m_size = m_position;
+        }
         m_cur = m_root;
         while (pos > m_cur->size) {
             pos -= m_cur->size;
@@ -524,100 +527,100 @@ namespace liucxi {
         return str;
     }
 
-//    uint64_t ByteArray::getReadBuffers(std::vector<iovec> &buffers, uint64_t len) {
-//        len = len > getReadSize() ? getReadSize() : len;
-//        if(len == 0) {
-//            return 0;
-//        }
-//
-//        uint64_t size = len;
-//
-//        size_t npos = m_position % m_baseSize;
-//        size_t ncap = m_cur->size - npos;
-//        struct iovec iov{};
-//        Node* cur = m_cur;
-//
-//        while(len > 0) {
-//            if(ncap >= len) {
-//                iov.iov_base = cur->ptr + npos;
-//                iov.iov_len = len;
-//                len = 0;
-//            } else {
-//                iov.iov_base = cur->ptr + npos;
-//                iov.iov_len = ncap;
-//                len -= ncap;
-//                cur = cur->next;
-//                ncap = cur->size;
-//                npos = 0;
-//            }
-//            buffers.push_back(iov);
-//        }
-//        return size;
-//    }
-//
-//    uint64_t ByteArray::getReadBuffers(std::vector<iovec> &buffers, uint64_t len, uint64_t position) {
-//        len = len > getReadSize() ? getReadSize() : len;
-//        if(len == 0) {
-//            return 0;
-//        }
-//
-//        uint64_t size = len;
-//
-//        size_t npos = position % m_baseSize;
-//        size_t count = position / m_baseSize;
-//        Node* cur = m_root;
-//        while(count > 0) {
-//            cur = cur->next;
-//            --count;
-//        }
-//
-//        size_t ncap = cur->size - npos;
-//        struct iovec iov{};
-//        while(len > 0) {
-//            if(ncap >= len) {
-//                iov.iov_base = cur->ptr + npos;
-//                iov.iov_len = len;
-//                len = 0;
-//            } else {
-//                iov.iov_base = cur->ptr + npos;
-//                iov.iov_len = ncap;
-//                len -= ncap;
-//                cur = cur->next;
-//                ncap = cur->size;
-//                npos = 0;
-//            }
-//            buffers.push_back(iov);
-//        }
-//        return size;
-//    }
-//
-//    uint64_t ByteArray::getWriteBuffers(std::vector<iovec> &buffers, uint64_t len) {
-//        if(len == 0) {
-//            return 0;
-//        }
-//        addCapacity(len);
-//        uint64_t size = len;
-//
-//        size_t npos = m_position % m_baseSize;
-//        size_t ncap = m_cur->size - npos;
-//        struct iovec iov{};
-//        Node* cur = m_cur;
-//        while(len > 0) {
-//            if(ncap >= len) {
-//                iov.iov_base = cur->ptr + npos;
-//                iov.iov_len = len;
-//                len = 0;
-//            } else {
-//                iov.iov_base = cur->ptr + npos;
-//                iov.iov_len = ncap;
-//
-//                len -= ncap;
-//                cur = cur->next;
-//                ncap = cur->size;
-//                npos = 0;
-//            }
-//            buffers.push_back(iov);
-//        }
-//        return size;
-//    }
+    uint64_t ByteArray::getReadBuffers(std::vector<iovec> &buffers, uint64_t len) {
+        len = len > getReadSize() ? getReadSize() : len;
+        if(len == 0) {
+            return 0;
+        }
+
+        uint64_t size = len;
+
+        size_t npos = m_position % m_baseSize;
+        size_t ncap = m_cur->size - npos;
+        struct iovec iov{};
+        Node* cur = m_cur;
+
+        while(len > 0) {
+            if(ncap >= len) {
+                iov.iov_base = cur->ptr + npos;
+                iov.iov_len = len;
+                len = 0;
+            } else {
+                iov.iov_base = cur->ptr + npos;
+                iov.iov_len = ncap;
+                len -= ncap;
+                cur = cur->next;
+                ncap = cur->size;
+                npos = 0;
+            }
+            buffers.push_back(iov);
+        }
+        return size;
+    }
+
+    uint64_t ByteArray::getReadBuffers(std::vector<iovec> &buffers, uint64_t len, uint64_t position) {
+        len = len > getReadSize() ? getReadSize() : len;
+        if(len == 0) {
+            return 0;
+        }
+
+        uint64_t size = len;
+
+        size_t npos = position % m_baseSize;
+        size_t count = position / m_baseSize;
+        Node* cur = m_root;
+        while(count > 0) {
+            cur = cur->next;
+            --count;
+        }
+
+        size_t ncap = cur->size - npos;
+        struct iovec iov{};
+        while(len > 0) {
+            if(ncap >= len) {
+                iov.iov_base = cur->ptr + npos;
+                iov.iov_len = len;
+                len = 0;
+            } else {
+                iov.iov_base = cur->ptr + npos;
+                iov.iov_len = ncap;
+                len -= ncap;
+                cur = cur->next;
+                ncap = cur->size;
+                npos = 0;
+            }
+            buffers.push_back(iov);
+        }
+        return size;
+    }
+
+    uint64_t ByteArray::getWriteBuffers(std::vector<iovec> &buffers, uint64_t len) {
+        if(len == 0) {
+            return 0;
+        }
+        addCapacity(len);
+        uint64_t size = len;
+
+        size_t npos = m_position % m_baseSize;
+        size_t ncap = m_cur->size - npos;
+        struct iovec iov{};
+        Node* cur = m_cur;
+        while(len > 0) {
+            if(ncap >= len) {
+                iov.iov_base = cur->ptr + npos;
+                iov.iov_len = len;
+                len = 0;
+            } else {
+                iov.iov_base = cur->ptr + npos;
+                iov.iov_len = ncap;
+
+                len -= ncap;
+                cur = cur->next;
+                ncap = cur->size;
+                npos = 0;
+            }
+            buffers.push_back(iov);
+        }
+        return size;
+    }
 }
