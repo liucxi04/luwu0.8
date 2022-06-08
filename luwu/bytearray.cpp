@@ -36,14 +36,6 @@ namespace liucxi {
         }
     }
 
-    void ByteArray::setLittleEndian(bool v) {
-        if (v) {
-            m_endian = LITTLE_ENDIAN;
-        } else {
-            m_endian = BIG_ENDIAN;
-        }
-    }
-
     void ByteArray::writeFixInt8(int8_t val) {
         write(&val, 1);
     }
@@ -228,10 +220,6 @@ namespace liucxi {
         return (val >> 1) ^ -(val & 1);
     }
 
-    static int64_t DecodeZigzag64(const uint64_t &val) {
-        return (val >> 1) ^ -(val & 1);
-    }
-
     int32_t ByteArray::readInt32() {
         return DecodeZigzag32(readUint32());
     }
@@ -250,13 +238,17 @@ namespace liucxi {
         return result;
     }
 
+    static int64_t DecodeZigzag64(const uint64_t &val) {
+        return (val >> 1) ^ -(val & 1);
+    }
+
     int64_t ByteArray::readInt64() {
         return DecodeZigzag64(readUint64());
     }
 
     uint64_t ByteArray::readUint64() {
         uint64_t result = 0;
-        for (int i = 0; i < 32; i += 7) {
+        for (int i = 0; i < 64; i += 7) {
             uint8_t b = readFixUint8();
             if (b < 0x80) {
                 result |= ((uint64_t) b) << i;
@@ -317,7 +309,7 @@ namespace liucxi {
     void ByteArray::clear() {
         m_position = m_size = 0;
         m_capacity = m_baseSize;
-        Node *tmp = m_root->next;
+        Node *tmp = m_root->next;       // 第一块不删除
         while (tmp) {
             m_cur = tmp;
             tmp = tmp->next;
@@ -334,9 +326,9 @@ namespace liucxi {
 
         addCapacity(size);
 
-        size_t npos = m_position % m_baseSize;
-        size_t ncap = m_cur->size - npos;
-        size_t bpos = 0;
+        size_t npos = m_position % m_baseSize;      // 在当前内存块的位置
+        size_t ncap = m_cur->size - npos;           // 当前内存快的剩余容量
+        size_t bpos = 0;                            // 需要写入的数据当前写了多少
 
         while (size > 0) {
             if (ncap >= size) {
@@ -368,9 +360,9 @@ namespace liucxi {
             throw std::out_of_range("not enough length");
         }
 
-        size_t npos = m_position % m_baseSize;
-        size_t ncap = m_cur->size - npos;
-        size_t bpos = 0;
+        size_t npos = m_position % m_baseSize;      // 在当前内存块的位置
+        size_t ncap = m_cur->size - npos;           // 当前内存快的剩余容量
+        size_t bpos = 0;                            // 需要读取的数据当前读了多少
 
         while (size > 0) {
             if (ncap >= size) {
@@ -424,21 +416,6 @@ namespace liucxi {
         }
     }
 
-    void ByteArray::setPosition(size_t pos) {
-        if (pos > m_size) {
-            throw std::out_of_range("set_position out of range");
-        }
-        m_position = pos;
-        m_cur = m_root;
-        while (pos > m_cur->size) {
-            pos -= m_cur->size;
-            m_cur = m_cur->next;
-        }
-        if (pos == m_cur->size) {
-            m_cur = m_cur->next;
-        }
-    }
-
     bool ByteArray::writeToFile(const std::string &name) const {
         std::ofstream ofs;
         ofs.open(name, std::ios::trunc | std::ios::binary);
@@ -454,7 +431,7 @@ namespace liucxi {
         Node *cur = m_cur;
 
         while (readSize > 0) {
-            size_t diff = readSize % m_baseSize;
+            size_t diff = pos % m_baseSize;
             ssize_t len = (readSize > m_baseSize ? m_baseSize : readSize) - diff;
             ofs.write(cur->ptr + diff, len);
             cur = cur->next;
@@ -474,7 +451,7 @@ namespace liucxi {
             return false;
         }
 
-        std::shared_ptr<char> buf(new char[m_baseSize], [](char *ptr) { delete[] ptr; });
+        std::shared_ptr<char> buf(new char[m_baseSize], [](const char *ptr) { delete[] ptr; });
         while (!ifs.eof()) {
             ifs.read(buf.get(), m_baseSize);
             write(buf.get(), ifs.gcount());
@@ -482,25 +459,52 @@ namespace liucxi {
         return true;
     }
 
-    void ByteArray::addCapacity(size_t size) {
-        if (size == 0) {
-            return;
+    void ByteArray::setPosition(size_t pos) {
+        if (pos > m_size) {
+            throw std::out_of_range("set_position out of range");
         }
+        m_position = pos;
+        m_cur = m_root;
+        while (pos > m_cur->size) {
+            pos -= m_cur->size;
+            m_cur = m_cur->next;
+        }
+        if (pos == m_cur->size) {
+            m_cur = m_cur->next;
+        }
+    }
+
+    void ByteArray::setLittleEndian(bool v) {
+        if (v) {
+            m_endian = LITTLE_ENDIAN;
+        } else {
+            m_endian = BIG_ENDIAN;
+        }
+    }
+
+    void ByteArray::addCapacity(size_t size) {
         size_t old = getCapacity();
         if (old >= size) {
             return;
         }
 
         size = size - old;
-        size_t count = ceil(1.0 * size / m_baseSize);
+        size_t count = size / m_baseSize;
+        if (size % m_baseSize) {
+            ++count;
+        }
+
         Node *tmp = m_root;
         while (tmp->next) {
             tmp = tmp->next;
         }
 
-        Node *first = tmp->next;
+        Node *first = nullptr;
         for (size_t i = 0; i < count; ++i) {
             tmp->next = new Node(m_baseSize);
+            if (first == nullptr) {
+                first = tmp->next;
+            }
             tmp = tmp->next;
             m_capacity += m_baseSize;
         }
@@ -520,101 +524,100 @@ namespace liucxi {
         return str;
     }
 
-    uint64_t ByteArray::getReadBuffers(std::vector<iovec> &buffers, uint64_t len) {
-        len = len > getReadSize() ? getReadSize() : len;
-        if(len == 0) {
-            return 0;
-        }
-
-        uint64_t size = len;
-
-        size_t npos = m_position % m_baseSize;
-        size_t ncap = m_cur->size - npos;
-        struct iovec iov{};
-        Node* cur = m_cur;
-
-        while(len > 0) {
-            if(ncap >= len) {
-                iov.iov_base = cur->ptr + npos;
-                iov.iov_len = len;
-                len = 0;
-            } else {
-                iov.iov_base = cur->ptr + npos;
-                iov.iov_len = ncap;
-                len -= ncap;
-                cur = cur->next;
-                ncap = cur->size;
-                npos = 0;
-            }
-            buffers.push_back(iov);
-        }
-        return size;
-    }
-
-    uint64_t ByteArray::getReadBuffers(std::vector<iovec> &buffers, uint64_t len, uint64_t position) {
-        len = len > getReadSize() ? getReadSize() : len;
-        if(len == 0) {
-            return 0;
-        }
-
-        uint64_t size = len;
-
-        size_t npos = position % m_baseSize;
-        size_t count = position / m_baseSize;
-        Node* cur = m_root;
-        while(count > 0) {
-            cur = cur->next;
-            --count;
-        }
-
-        size_t ncap = cur->size - npos;
-        struct iovec iov{};
-        while(len > 0) {
-            if(ncap >= len) {
-                iov.iov_base = cur->ptr + npos;
-                iov.iov_len = len;
-                len = 0;
-            } else {
-                iov.iov_base = cur->ptr + npos;
-                iov.iov_len = ncap;
-                len -= ncap;
-                cur = cur->next;
-                ncap = cur->size;
-                npos = 0;
-            }
-            buffers.push_back(iov);
-        }
-        return size;
-    }
-
-    uint64_t ByteArray::getWriteBuffers(std::vector<iovec> &buffers, uint64_t len) {
-        if(len == 0) {
-            return 0;
-        }
-        addCapacity(len);
-        uint64_t size = len;
-
-        size_t npos = m_position % m_baseSize;
-        size_t ncap = m_cur->size - npos;
-        struct iovec iov{};
-        Node* cur = m_cur;
-        while(len > 0) {
-            if(ncap >= len) {
-                iov.iov_base = cur->ptr + npos;
-                iov.iov_len = len;
-                len = 0;
-            } else {
-                iov.iov_base = cur->ptr + npos;
-                iov.iov_len = ncap;
-
-                len -= ncap;
-                cur = cur->next;
-                ncap = cur->size;
-                npos = 0;
-            }
-            buffers.push_back(iov);
-        }
-        return size;
-    }
-
+//    uint64_t ByteArray::getReadBuffers(std::vector<iovec> &buffers, uint64_t len) {
+//        len = len > getReadSize() ? getReadSize() : len;
+//        if(len == 0) {
+//            return 0;
+//        }
+//
+//        uint64_t size = len;
+//
+//        size_t npos = m_position % m_baseSize;
+//        size_t ncap = m_cur->size - npos;
+//        struct iovec iov{};
+//        Node* cur = m_cur;
+//
+//        while(len > 0) {
+//            if(ncap >= len) {
+//                iov.iov_base = cur->ptr + npos;
+//                iov.iov_len = len;
+//                len = 0;
+//            } else {
+//                iov.iov_base = cur->ptr + npos;
+//                iov.iov_len = ncap;
+//                len -= ncap;
+//                cur = cur->next;
+//                ncap = cur->size;
+//                npos = 0;
+//            }
+//            buffers.push_back(iov);
+//        }
+//        return size;
+//    }
+//
+//    uint64_t ByteArray::getReadBuffers(std::vector<iovec> &buffers, uint64_t len, uint64_t position) {
+//        len = len > getReadSize() ? getReadSize() : len;
+//        if(len == 0) {
+//            return 0;
+//        }
+//
+//        uint64_t size = len;
+//
+//        size_t npos = position % m_baseSize;
+//        size_t count = position / m_baseSize;
+//        Node* cur = m_root;
+//        while(count > 0) {
+//            cur = cur->next;
+//            --count;
+//        }
+//
+//        size_t ncap = cur->size - npos;
+//        struct iovec iov{};
+//        while(len > 0) {
+//            if(ncap >= len) {
+//                iov.iov_base = cur->ptr + npos;
+//                iov.iov_len = len;
+//                len = 0;
+//            } else {
+//                iov.iov_base = cur->ptr + npos;
+//                iov.iov_len = ncap;
+//                len -= ncap;
+//                cur = cur->next;
+//                ncap = cur->size;
+//                npos = 0;
+//            }
+//            buffers.push_back(iov);
+//        }
+//        return size;
+//    }
+//
+//    uint64_t ByteArray::getWriteBuffers(std::vector<iovec> &buffers, uint64_t len) {
+//        if(len == 0) {
+//            return 0;
+//        }
+//        addCapacity(len);
+//        uint64_t size = len;
+//
+//        size_t npos = m_position % m_baseSize;
+//        size_t ncap = m_cur->size - npos;
+//        struct iovec iov{};
+//        Node* cur = m_cur;
+//        while(len > 0) {
+//            if(ncap >= len) {
+//                iov.iov_base = cur->ptr + npos;
+//                iov.iov_len = len;
+//                len = 0;
+//            } else {
+//                iov.iov_base = cur->ptr + npos;
+//                iov.iov_len = ncap;
+//
+//                len -= ncap;
+//                cur = cur->next;
+//                ncap = cur->size;
+//                npos = 0;
+//            }
+//            buffers.push_back(iov);
+//        }
+//        return size;
+//    }
 }
