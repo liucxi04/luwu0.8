@@ -85,17 +85,6 @@ namespace liucxi {
         setOption(SOL_SOCKET, SO_RCVTIMEO, tv);
     }
 
-    bool Socket::setOption(int level, int option, const void *result, size_t len) const {
-        int rt = setsockopt(m_sock, level, option, result, (socklen_t) len);
-        if (rt) {
-            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "Socket::setOption sock=" << m_sock
-                                                    << " level=" << level << " option=" << option
-                                                    << " errno=" << errno << " errstr=" << strerror(errno);
-            return false;
-        }
-        return true;
-    }
-
     bool Socket::getOption(int level, int option, void *result, size_t *len) const {
         int rt = getsockopt(m_sock, level, option, result, (socklen_t *) len);
         if (rt) {
@@ -107,36 +96,30 @@ namespace liucxi {
         return true;
     }
 
+    bool Socket::setOption(int level, int option, const void *result, size_t len) const {
+        int rt = setsockopt(m_sock, level, option, result, (socklen_t) len);
+        if (rt) {
+            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "Socket::setOption sock=" << m_sock
+                                                    << " level=" << level << " option=" << option
+                                                    << " errno=" << errno << " errstr=" << strerror(errno);
+            return false;
+        }
+        return true;
+    }
+
     Socket::ptr Socket::accept() const {
         Socket::ptr sock(new Socket(m_family, m_type, m_protocol));
-        int newSock = ::accept(m_sock, nullptr, nullptr);
-        if (newSock == -1) {
+        int newFd = ::accept(m_sock, nullptr, nullptr);
+        if (newFd == -1) {
             LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "accept(" << m_sock << ") errno="
                                                     << errno << " errstr=" << strerror(errno);
             return nullptr;
         }
 
-        if (sock->init(newSock)) {
+        if (sock->init(newFd)) {
             return sock;
         }
         return nullptr;
-    }
-
-    bool Socket::init(int sock) {
-        FdContext::ptr ctx = FdMgr::getInstance()->get(sock);
-        if (!ctx && ctx->isSocket() && !ctx->isClose()) {
-            m_sock = sock;
-            m_isConnected = true;
-            initSock();
-            getRemoteAddress();
-            getLocalAddress();
-            return true;
-        }
-        return false;
-    }
-
-    bool Socket::isValid() const {
-        return m_sock != -1;
     }
 
     bool Socket::bind(const Address::ptr &addr) {
@@ -161,7 +144,7 @@ namespace liucxi {
         return true;
     }
 
-    bool Socket::connect(const Address::ptr &addr, int64_t timeout) {
+    bool Socket::connect(const Address::ptr &addr, uint64_t timeout) {
         m_remoteAddress = addr;
         if (!isValid()) {
             newSock();
@@ -361,6 +344,19 @@ namespace liucxi {
 
     bool Socket::cancelAll() const {
         return IOManager::GetThis()->cancelAll(m_sock);
+    }
+
+    bool Socket::init(int sock) {
+        FdContext::ptr ctx = FdMgr::getInstance()->get(sock);
+        if (!ctx && ctx->isSocket() && !ctx->isClose()) {
+            m_sock = sock;
+            m_isConnected = true;
+            initSock();
+            getRemoteAddress();
+            getLocalAddress();
+            return true;
+        }
+        return false;
     }
 
     void Socket::initSock() {

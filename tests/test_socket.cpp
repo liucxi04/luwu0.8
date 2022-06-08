@@ -43,7 +43,7 @@ void test_socket() {
     }
 
     buffer.resize(rt);
-    LUWU_LOG_INFO(g_logger) << buffer;
+    std::cout << buffer;
 }
 
 int main() {

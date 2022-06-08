@@ -118,13 +118,10 @@ namespace liucxi {
         std::ostream &HttpRequest::dump(std::ostream &os) const {
             os << HttpMethodToString(m_method) << " "
                << m_path
-               << (m_query.empty() ? "" : "?")
-               << m_query
-               << (m_fragment.empty() ? "" : "#")
-               << m_fragment
-               << "HTTP/"
-               << ((uint32_t) (m_version >> 4))
-               << ((uint32_t) (m_version & 0x0f))
+               << (m_query.empty() ? "" : "?") << m_query
+               << (m_fragment.empty() ? "" : "#") << m_fragment
+               << " HTTP/"
+               << ((uint32_t) (m_version >> 4)) << "." << ((uint32_t) (m_version & 0x0f))
                << "\r\n";
 
             if (!m_webSocket) {
@@ -184,7 +181,5 @@ namespace liucxi {
             }
             return os;
         }
-
-
     }
 }

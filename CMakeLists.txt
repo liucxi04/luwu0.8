@@ -23,7 +23,8 @@ set(SRC
         luwu/address.cpp
         luwu/socket.cpp
         luwu/bytearray.cpp
-        luwu/http/http.cpp)
+        luwu/http/http.cpp
+        luwu/http/http_parser.cpp)
 
 add_library(luwu SHARED ${SRC})
 
@@ -75,3 +76,7 @@ target_link_libraries(test_socket luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARI
 add_executable(test_bytearray tests/test_bytearray.cpp)
 add_dependencies(test_bytearray luwu)
 target_link_libraries(test_bytearray luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(test_http tests/test_http.cpp)
+add_dependencies(test_http luwu)
+target_link_libraries(test_http luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)

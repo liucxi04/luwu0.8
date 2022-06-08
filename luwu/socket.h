@@ -11,10 +11,12 @@
 #include <vector>
 
 namespace liucxi {
+    /**
+     * @brief Socket 封装
+     */
     class Socket : public std::enable_shared_from_this<Socket>, Noncopyable {
     public:
         typedef std::shared_ptr<Socket> ptr;
-        typedef std::weak_ptr<Socket> weak_ptr;
 
         static Socket::ptr CreateTCP();
 
@@ -24,13 +26,19 @@ namespace liucxi {
 
         static Socket::ptr CreateUDP6();
 
-        static Socket::ptr CreateTCP(const Address::ptr& addr);
-
-        static Socket::ptr CreateUDP(const Address::ptr& addr);
-
         static Socket::ptr CreateUnixTCP();
 
         static Socket::ptr CreateUnixUDP();
+
+        /**
+         * @brief 创建 TCP socket，与给定的 addr 的协议簇类型相同
+         */
+        static Socket::ptr CreateTCP(const Address::ptr &addr);
+
+        /**
+         * @brief 创建 UDP socket，与给定的 addr 的协议簇类型相同
+         */
+        static Socket::ptr CreateUDP(const Address::ptr &addr);
 
         Socket(int family, int type, int protocol = 0);
 
@@ -61,9 +69,9 @@ namespace liucxi {
 
         Socket::ptr accept() const;
 
-        bool bind(const Address::ptr& addr);
+        bool bind(const Address::ptr &addr);
 
-        bool connect(const Address::ptr& addr, int64_t timeout = -1);
+        bool connect(const Address::ptr &addr, uint64_t timeout = -1);
 
         bool close();
 
@@ -71,14 +79,20 @@ namespace liucxi {
 
         ssize_t send(const void *buffer, size_t length, int flags = 0) const;
 
-        ssize_t sendTo(const void *buffer, size_t length, const Address::ptr& to, int flags = 0) const;
+        ssize_t sendTo(const void *buffer, size_t length, const Address::ptr &to, int flags = 0) const;
 
         ssize_t recv(void *buffer, size_t length, int flags = 0) const;
 
-        ssize_t recvFrom(void *buffer, size_t length, const Address::ptr& from, int flags = 0) const;
+        ssize_t recvFrom(void *buffer, size_t length, const Address::ptr &from, int flags = 0) const;
 
+        /**
+         * @brief 获取远端地址，使用 getpeername
+         */
         Address::ptr getRemoteAddress();
 
+        /**
+         * @brief 获取本地地址，使用 getsockname
+         */
         Address::ptr getLocalAddress();
 
         int getSocket() const { return m_sock; }
@@ -91,7 +105,7 @@ namespace liucxi {
 
         bool isConnected() const { return m_isConnected; }
 
-        bool isValid() const;
+        bool isValid() const { return m_sock != -1; }
 
         int getError() const;
 
@@ -107,10 +121,21 @@ namespace liucxi {
 
     private:
 
+        /**
+         * @brief 初始化 socket
+         * @details 设置非阻塞和重用，被下面两个函数调用
+         */
         void initSock();
 
+        /**
+         * @brief 使用一个套接字描述符 sock 来初始化
+         */
         bool init(int sock);
 
+        /**
+         * @brief 创建 socket
+         * @details 调用系统函数初始化 m_sock
+         */
         void newSock();
 
     private:
@@ -120,8 +145,12 @@ namespace liucxi {
         int m_protocol;
         bool m_isConnected;
 
-        Address::ptr m_localAddress;
-        Address::ptr m_remoteAddress;
+        Address::ptr m_localAddress;        /// 本地地址
+        Address::ptr m_remoteAddress;       /// 远端地址
     };
+
+    std::ostream &operator<<(std::ostream &os, const Socket &socket) {
+        return socket.dump(os);
+    }
 }
 #endif //LUWU_SOCKET_H
