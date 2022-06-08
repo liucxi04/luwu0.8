@@ -104,6 +104,8 @@ namespace liucxi {
 
             void setBody(const std::string &body) { m_body = body; }
 
+            void appendBody(const std::string &body) { m_body.append(body); }
+
             void setHeaders(const MapType &headers) { m_headers = headers; }
 
             void setParams(const MapType &params) { m_params = params; }

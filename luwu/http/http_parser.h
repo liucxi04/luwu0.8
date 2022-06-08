@@ -39,7 +39,7 @@ namespace liucxi {
             void setFiled(const std::string &filed) { m_filed = filed; }
 
         private:
-            http_parser m_parser;
+            http_parser m_parser{};
             HttpRequest::ptr m_data;
             int m_error;
             bool m_finished;
@@ -66,7 +66,7 @@ namespace liucxi {
 
             void setError(int error) { m_error = error; }
 
-            HttpRequest::ptr getData() const { return m_data; }
+            HttpResponse::ptr getData() const { return m_data; }
 
             const http_parser &getParser() const { return m_parser; }
 
@@ -75,8 +75,8 @@ namespace liucxi {
             void setFiled(const std::string &filed) { m_filed = filed; }
 
         private:
-            http_parser m_parser;
-            HttpRequest::ptr m_data;
+            http_parser m_parser{};
+            HttpResponse::ptr m_data;
             int m_error;
             bool m_finished;
             std::string m_filed;

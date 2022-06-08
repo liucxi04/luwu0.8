@@ -80,3 +80,7 @@ target_link_libraries(test_bytearray luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBR
 add_executable(test_http tests/test_http.cpp)
 add_dependencies(test_http luwu)
 target_link_libraries(test_http luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(test_http_parser tests/test_http_parser.cpp)
+add_dependencies(test_http_parser luwu)
+target_link_libraries(test_http_parser luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
