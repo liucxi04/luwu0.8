@@ -26,7 +26,10 @@ set(SRC
         luwu/http/http.cpp
         luwu/http/http-parser/http_parser.c
         luwu/http/http_parser.cpp
-        luwu/tcp_server.cpp)
+        luwu/tcp_server.cpp
+        luwu/streams/stream.cpp
+        luwu/streams/socket_stream.cpp
+        luwu/http/http_session.cpp)
 
 add_library(luwu SHARED ${SRC})
 
@@ -49,7 +52,7 @@ target_link_libraries(utils luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} y
 
 add_executable(fiber tests/test_fiber.cpp)
 add_dependencies(fiber luwu)
-target_link_libraries(fiber luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+target_link_libraries(fiber luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
 
 add_executable(scheduler tests/test_scheduler.cpp)
 add_dependencies(scheduler luwu)

@@ -206,31 +206,79 @@ namespace liucxi {
         return false;
     }
 
-    ssize_t Socket::send(const void *buffer, size_t length, int flags) const {
+    size_t Socket::send(const void *buffer, size_t length, int flags) const {
         if (isConnected()) {
             return ::send(m_sock, buffer, length, flags);
         }
         return -1;
     }
 
-    ssize_t Socket::sendTo(const void *buffer, size_t length, const Address::ptr &to, int flags) const {
+    size_t Socket::send(const iovec *buffer, size_t length, int flags) const {
+        if(isConnected()) {
+            msghdr msg{};
+            memset(&msg, 0, sizeof(msg));
+            msg.msg_iov = (iovec*)buffer;
+            msg.msg_iovlen = length;
+            return ::sendmsg(m_sock, &msg, flags);
+        }
+        return -1;
+    }
+
+    size_t Socket::sendTo(const void *buffer, size_t length, const Address::ptr &to, int flags) const {
         if (isConnected()) {
             return ::sendto(m_sock, buffer, length, flags, to->getAddr(), to->getAddrLen());
         }
         return -1;
     }
 
-    ssize_t Socket::recv(void *buffer, size_t length, int flags) const {
+    size_t Socket::sendTo(const iovec *buffer, size_t length, const Address::ptr &to, int flags) const {
+        if(isConnected()) {
+            msghdr msg{};
+            memset(&msg, 0, sizeof(msg));
+            msg.msg_iov = (iovec*)buffer;
+            msg.msg_iovlen = length;
+            msg.msg_name = to->getAddr();
+            msg.msg_namelen = to->getAddrLen();
+            return ::sendmsg(m_sock, &msg, flags);
+        }
+        return -1;
+    }
+
+    size_t Socket::recv(void *buffer, size_t length, int flags) {
         if (isConnected()) {
             return ::recv(m_sock, buffer, length, flags);
         }
         return -1;
     }
 
-    ssize_t Socket::recvFrom(void *buffer, size_t length, const Address::ptr &from, int flags) const {
+    size_t Socket::recv(iovec *buffer, size_t length, int flags) {
+        if(isConnected()) {
+            msghdr msg{};
+            memset(&msg, 0, sizeof(msg));
+            msg.msg_iov = (iovec*)buffer;
+            msg.msg_iovlen = length;
+            return ::recvmsg(m_sock, &msg, flags);
+        }
+        return -1;
+    }
+
+    size_t Socket::recvFrom(void *buffer, size_t length, const Address::ptr &from, int flags) {
         if (isConnected()) {
             socklen_t len = from->getAddrLen();
             return ::recvfrom(m_sock, buffer, length, flags, from->getAddr(), &len);
+        }
+        return -1;
+    }
+
+    size_t Socket::recvFrom(iovec *buffer, size_t length, const Address::ptr &from, int flags) {
+        if(isConnected()) {
+            msghdr msg{};
+            memset(&msg, 0, sizeof(msg));
+            msg.msg_iov = (iovec*)buffer;
+            msg.msg_iovlen = length;
+            msg.msg_name = from->getAddr();
+            msg.msg_namelen = from->getAddrLen();
+            return ::recvmsg(m_sock, &msg, flags);
         }
         return -1;
     }

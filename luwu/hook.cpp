@@ -37,8 +37,14 @@ namespace liucxi {
     XX(close)           \
     XX(read)            \
     XX(recv)            \
+    XX(readv)           \
+    XX(recvfrom)        \
+    XX(recvmsg)         \
     XX(write)           \
     XX(send)            \
+    XX(writev)          \
+    XX(sendto)          \
+    XX(sendmsg)         \
     XX(fcntl)           \
     XX(ioctl)           \
     XX(getsockopt)      \
@@ -317,6 +323,21 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
                  liucxi::IOManager::READ, SO_RCVTIMEO, buf, len, flags);
 }
 
+ssize_t readv(int fd, const struct iovec *iov, int iovcnt) {
+    return do_io(fd, readv_f, "readv",
+                 liucxi::IOManager::READ, SO_RCVTIMEO, iov, iovcnt);
+}
+
+ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen) {
+    return do_io(sockfd, recvfrom_f, "recvfrom",
+                 liucxi::IOManager::READ, SO_RCVTIMEO, buf, len, flags, src_addr, addrlen);
+}
+
+ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags) {
+    return do_io(sockfd, recvmsg_f, "recvmsg",
+                 liucxi::IOManager::READ, SO_RCVTIMEO, msg, flags);
+}
+
 ssize_t write(int fd, const void *buf, size_t count) {
     return do_io(fd, write_f, "write",
                  liucxi::IOManager::WRITE, SO_SNDTIMEO, buf, count);
@@ -325,6 +346,21 @@ ssize_t write(int fd, const void *buf, size_t count) {
 ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
     return do_io(sockfd, send_f, "send",
                  liucxi::IOManager::WRITE, SO_SNDTIMEO, buf, len, flags);
+}
+
+ssize_t writev(int fd, const struct iovec *iov, int iovcnt) {
+    return do_io(fd, writev_f, "writev",
+                 liucxi::IOManager::WRITE, SO_SNDTIMEO, iov, iovcnt);
+}
+
+ssize_t sendto(int s, const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen) {
+    return do_io(s, sendto_f, "sendto",
+                 liucxi::IOManager::WRITE, SO_SNDTIMEO, msg, len, flags, to, tolen);
+}
+
+ssize_t sendmsg(int s, const struct msghdr *msg, int flags) {
+    return do_io(s, sendmsg_f, "sendmsg",
+                 liucxi::IOManager::WRITE, SO_SNDTIMEO, msg, flags);
 }
 
 int fcntl(int fd, int cmd, ... /* arg */) {

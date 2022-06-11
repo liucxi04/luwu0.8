@@ -77,13 +77,21 @@ namespace liucxi {
 
         bool listen(int backlog = SOMAXCONN) const;
 
-        ssize_t send(const void *buffer, size_t length, int flags = 0) const;
+        size_t send(const void *buffer, size_t length, int flags = 0) const;
 
-        ssize_t sendTo(const void *buffer, size_t length, const Address::ptr &to, int flags = 0) const;
+        size_t send(const iovec *buffer, size_t length, int flags = 0) const;
 
-        ssize_t recv(void *buffer, size_t length, int flags = 0) const;
+        size_t sendTo(const void *buffer, size_t length, const Address::ptr &to, int flags = 0) const;
 
-        ssize_t recvFrom(void *buffer, size_t length, const Address::ptr &from, int flags = 0) const;
+        size_t sendTo(const iovec *buffer, size_t length, const Address::ptr &to, int flags = 0) const;
+
+        size_t recv(void *buffer, size_t length, int flags = 0);
+
+        size_t recv(iovec *buffer, size_t length, int flags = 0);
+
+        size_t recvFrom(void *buffer, size_t length, const Address::ptr &from, int flags = 0);
+
+        size_t recvFrom(iovec *buffer, size_t length, const Address::ptr &from, int flags = 0);
 
         /**
          * @brief 获取远端地址，使用 getpeername

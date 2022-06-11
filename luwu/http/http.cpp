@@ -140,6 +140,22 @@ namespace liucxi {
             return os;
         }
 
+        void HttpRequest::initQueryParam() {
+
+        }
+
+        void HttpRequest::initBodyParam() {
+
+        }
+
+        void HttpRequest::initCookies() {
+
+        }
+
+        void HttpRequest::init() {
+
+        }
+
         HttpResponse::HttpResponse(uint8_t version, bool close)
                 : m_version(version), m_close(close), m_status(HttpStatus::OK), m_webSocket(false) {
         }
@@ -180,6 +196,14 @@ namespace liucxi {
                 os << "\r\n";
             }
             return os;
+        }
+
+        std::ostream &operator<<(std::ostream &os, const HttpRequest &req) {
+            return req.dump(os);
+        }
+
+        std::ostream &operator<<(std::ostream &os, const HttpResponse &rsp) {
+            return rsp.dump(os);
         }
     }
 }

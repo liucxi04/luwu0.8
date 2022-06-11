@@ -174,6 +174,14 @@ namespace liucxi {
 
             std::ostream &dump(std::ostream &os) const;
 
+            void initQueryParam();
+
+            void initBodyParam();
+
+            void initCookies();
+
+            void init();
+
         private:
             bool m_close;
             bool m_webSocket;
@@ -261,6 +269,10 @@ namespace liucxi {
             MapType m_headers;
             std::vector<std::string> m_cookies;
         };
+
+        std::ostream &operator<<(std::ostream &os, const HttpRequest &req);
+
+        std::ostream &operator<<(std::ostream &os, const HttpResponse &rps);
     }
 }
 #endif //LUWU_HTTP_H

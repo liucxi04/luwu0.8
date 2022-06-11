@@ -23,7 +23,8 @@ void EchoServer::handleClient(const liucxi::Socket::ptr &client) {
         std::vector<iovec> ios;
         ba->getWriteBuffers(ios, 1024);
 
-        ssize_t rt = client->recv(&ios[0], ios.size());
+        size_t rt = client->recv(&ios[0], ios.size());
+
         if (rt == 0) {
             LUWU_LOG_INFO(g_logger) << "client close";
             break;
@@ -31,6 +32,7 @@ void EchoServer::handleClient(const liucxi::Socket::ptr &client) {
             LUWU_LOG_ERROR(g_logger) << "client error rt = " << rt;
             break;
         }
+
         ba->setPosition(ba->getPosition() + rt);
         ba->setPosition(0);
         LUWU_LOG_INFO(g_logger) << ba->toString();
