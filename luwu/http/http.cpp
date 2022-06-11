@@ -125,9 +125,15 @@ namespace liucxi {
                << "\r\n";
 
             if (!m_webSocket) {
-                os << "connection: " << (m_close ? "close" : "keep-alive") << "\r\n";
+                os << "Connection: " << (m_close ? "close" : "keep-alive") << "\r\n";
             }
             for (auto &i: m_headers) {
+                if (!m_webSocket && strcasecmp(i.first.c_str(), "Connection") == 0) {
+                    continue;
+                }
+                if (!m_body.empty() && strcasecmp(i.first.c_str(), "content-length") == 0) {
+                    continue;
+                }
                 os << i.first << ": " << i.second << "\r\n";
             }
 
@@ -179,15 +185,15 @@ namespace liucxi {
                << (m_reason.empty() ? HttpStatusToString(m_status) : m_reason)
                << "\r\n";
 
-            for (auto &i : m_headers) {
+            if (!m_webSocket) {
+                os << "connection: " << (m_close ? "close" : "keep-alive") << "\r\n";
+            }
+
+            for (auto &i: m_headers) {
                 if (!m_webSocket && strcasecmp(i.first.c_str(), "connection") == 0) {
                     continue;
                 }
                 os << i.first << ": " << i.second << "\r\n";
-            }
-
-            if (!m_webSocket) {
-                os << "connection: " << (m_close ? "close" : "keep-alive") << "\r\n";
             }
 
             if (!m_body.empty()) {

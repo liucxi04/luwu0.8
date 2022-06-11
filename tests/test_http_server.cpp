@@ -9,6 +9,19 @@ void run() {
     while (!server->bind(address)) {
         sleep(2);
     }
+    auto sd = server->getDispatch();
+    sd->addServlet("/luwu/xx", [](const liucxi::http::HttpRequest::ptr& req, 
+            const liucxi::http::HttpResponse::ptr& rsp, const liucxi::http::HttpSession::ptr& session) {
+        rsp->setBody(req->toString());
+        return 0;
+    });
+
+    sd->addGlobServlet("/luwu/*", [](const liucxi::http::HttpRequest::ptr& req,
+            const liucxi::http::HttpResponse::ptr& rsp, const liucxi::http::HttpSession::ptr& session) {
+        rsp->setBody("Glob:\r\n" + req->toString());
+        return 0;
+    });
+    
     server->start();
 }
 

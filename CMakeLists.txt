@@ -30,7 +30,8 @@ set(SRC
         luwu/streams/stream.cpp
         luwu/streams/socket_stream.cpp
         luwu/http/http_session.cpp
-        luwu/http/http_server.cpp)
+        luwu/http/http_server.cpp
+        luwu/http/servlet.cpp)
 
 add_library(luwu SHARED ${SRC})
 

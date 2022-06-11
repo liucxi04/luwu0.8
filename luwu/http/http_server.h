@@ -5,8 +5,11 @@
 #ifndef LUWU_HTTP_SERVER_H
 #define LUWU_HTTP_SERVER_H
 
+#include <utility>
+
 #include "http_session.h"
 #include "../tcp_server.h"
+#include "servlet.h"
 
 namespace liucxi {
     namespace http {
@@ -14,13 +17,18 @@ namespace liucxi {
         public:
             typedef std::shared_ptr<HttpServer> ptr;
 
-            HttpServer(bool keepalive = false, liucxi::IOManager *worker = liucxi::IOManager::GetThis());
+            explicit HttpServer(bool keepalive = false, liucxi::IOManager *worker = liucxi::IOManager::GetThis());
+
+            ServletDispatch::ptr getDispatch() const { return m_dispatch; }
+
+            void setDispatch(ServletDispatch::ptr dispatch) { m_dispatch = std::move(dispatch); }
 
         protected:
             void handleClient(const Socket::ptr &sock) override;
 
         private:
             bool m_keepalive;
+            ServletDispatch::ptr m_dispatch;
         };
     }
 }
