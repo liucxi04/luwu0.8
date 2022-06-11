@@ -31,7 +31,9 @@ set(SRC
         luwu/streams/socket_stream.cpp
         luwu/http/http_session.cpp
         luwu/http/http_server.cpp
-        luwu/http/servlet.cpp)
+        luwu/http/servlet.cpp
+        luwu/http/http_connection.cpp
+        luwu/uri.cpp)
 
 add_library(luwu SHARED ${SRC})
 
@@ -103,3 +105,11 @@ target_link_libraries(echo_server luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARI
 add_executable(test_http_server tests/test_http_server.cpp)
 add_dependencies(test_http_server luwu)
 target_link_libraries(test_http_server luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(test_http_connection tests/test_http_connection.cpp)
+add_dependencies(test_http_connection luwu)
+target_link_libraries(test_http_connection luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(test_uri tests/test_uri.cpp)
+add_dependencies(test_uri luwu)
+target_link_libraries(test_uri luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
