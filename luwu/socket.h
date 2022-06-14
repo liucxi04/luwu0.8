@@ -73,6 +73,8 @@ namespace liucxi {
 
         bool connect(const Address::ptr &addr, uint64_t timeout = -1);
 
+        bool reconnect(uint64_t timeout = -1);
+
         bool close();
 
         bool listen(int backlog = SOMAXCONN) const;

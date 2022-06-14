@@ -113,3 +113,15 @@ target_link_libraries(test_http_connection luwu ${CMAKE_THREAD_LIBS_INIT} ${Boos
 add_executable(test_uri tests/test_uri.cpp)
 add_dependencies(test_uri luwu)
 target_link_libraries(test_uri luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(my_http_server tests/my_http_server.cpp)
+add_dependencies(my_http_server luwu)
+target_link_libraries(my_http_server luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(http_server tests/http_server.cpp)
+add_dependencies(http_server luwu)
+target_link_libraries(http_server luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(test tests/test.cpp)
+add_dependencies(test luwu)
+target_link_libraries(test luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)

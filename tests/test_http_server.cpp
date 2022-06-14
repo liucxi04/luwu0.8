@@ -4,7 +4,7 @@
 #include "http/http_server.h"
 
 void run() {
-    liucxi::http::HttpServer::ptr server(new liucxi::http::HttpServer);
+    liucxi::http::HttpServer::ptr server(new liucxi::http::HttpServer(true));
     liucxi::Address::ptr address = liucxi::Address::LookupAny("0.0.0.0:1234");
     while (!server->bind(address)) {
         sleep(2);

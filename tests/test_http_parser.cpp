@@ -5,8 +5,8 @@
  * @date 2021-09-25
  */
 #include "http/http_parser.h"
-#include "macro.h"
 #include <iostream>
+#include "ready.h"
 
 const char test_request_data[] = "POST /login?aa=bb#sss HTTP/1.1\r\n"
                                  "Host: www.liucxi.xyz\r\n"
@@ -67,6 +67,9 @@ void test_response(const char *str) {
 }
 
 int main(int argc, char *argv[]) {
+
+    YAML::Node node = YAML::LoadFile("../conf/log.yml");
+    liucxi::Config::loadFromYaml(node);
 
     test_request(test_request_data);
     test_request(test_request_chunked_data);

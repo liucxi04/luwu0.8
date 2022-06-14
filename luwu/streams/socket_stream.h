@@ -9,6 +9,9 @@
 #include "socket.h"
 
 namespace liucxi {
+    /**
+     * @brief socket 流
+     */
     class SocketStream : public Stream {
     public:
         typedef std::shared_ptr<SocketStream> ptr;
@@ -33,7 +36,7 @@ namespace liucxi {
 
     private:
         Socket::ptr m_socket;
-        bool m_owner;
+        bool m_owner;           /// 是否交由本类全权控制，比如类析时关闭 socket
     };
 }
 #endif //LUWU_SOCKET_STREAM_H

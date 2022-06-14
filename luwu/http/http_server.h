@@ -17,14 +17,16 @@ namespace liucxi {
         public:
             typedef std::shared_ptr<HttpServer> ptr;
 
-            explicit HttpServer(bool keepalive = false, liucxi::IOManager *worker = liucxi::IOManager::GetThis());
+            explicit HttpServer(bool keepalive = false,
+                                liucxi::IOManager *worker = liucxi::IOManager::GetThis(),
+                                liucxi::IOManager *tcp_worker = liucxi::IOManager::GetThis());
 
             ServletDispatch::ptr getDispatch() const { return m_dispatch; }
 
             void setDispatch(ServletDispatch::ptr dispatch) { m_dispatch = std::move(dispatch); }
 
         protected:
-            void handleClient(const Socket::ptr &sock) override;
+            void handleClient(Socket::ptr sock) override;
 
         private:
             bool m_keepalive;

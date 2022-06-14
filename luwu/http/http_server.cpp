@@ -6,12 +6,12 @@
 
 namespace liucxi {
     namespace http {
-        HttpServer::HttpServer(bool keepalive, liucxi::IOManager *worker)
-                : TCPServer(worker), m_keepalive(keepalive) {
+        HttpServer::HttpServer(bool keepalive, liucxi::IOManager *worker, liucxi::IOManager *tcp_worker)
+                : TCPServer(tcp_worker), m_keepalive(keepalive) {
             m_dispatch.reset(new ServletDispatch);
         }
 
-        void HttpServer::handleClient(const Socket::ptr &sock) {
+        void HttpServer::handleClient(Socket::ptr sock) {
             HttpSession::ptr session(new HttpSession(sock));
             do {
                 auto req = session->recvRequest();

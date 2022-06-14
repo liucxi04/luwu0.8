@@ -94,7 +94,7 @@ namespace liucxi {
         public:
             typedef std::shared_ptr<ServletNotFound> ptr;
 
-            ServletNotFound(std::string page);
+            explicit ServletNotFound(std::string page);
 
             int32_t handle(HttpRequest::ptr request,
                            HttpResponse::ptr response, HttpSession::ptr session) override;

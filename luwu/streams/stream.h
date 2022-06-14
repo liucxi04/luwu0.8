@@ -9,6 +9,9 @@
 #include "../bytearray.h"
 
 namespace liucxi {
+    /**
+     * @brief 流结构，提供字节流读写接口
+     */
     class Stream {
     public:
         typedef std::shared_ptr<Stream> ptr;

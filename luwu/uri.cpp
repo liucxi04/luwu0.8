@@ -105,9 +105,6 @@ namespace liucxi {
     }
 
     bool URI::isDefaultPort() const {
-        if (m_port == 0) {
-            return true;
-        }
         if (m_scheme == "http" || m_scheme == "ws") {
             return m_port == 80;
         } else if (m_scheme == "https" || m_scheme == "wss") {

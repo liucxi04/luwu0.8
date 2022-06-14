@@ -3,23 +3,22 @@
 //
 #include "tcp_server.h"
 #include "macro.h"
+
 namespace liucxi {
     static Logger::ptr g_logger = LUWU_LOG_NAME("system");
 
-    TCPServer::TCPServer(IOManager *worker)
-        : m_worker(worker)
-        , m_recvTimeout(60 * 1000 * 2)
-        , m_name("luwu/1.0.0")
-        , m_stop(true){
+    TCPServer::TCPServer(IOManager *worker, IOManager *accept)
+            : m_worker(worker), m_accept(accept), m_recvTimeout(60 * 1000 * 2), m_name("luwu/1.0.0"), m_stop(true) {
     }
 
     TCPServer::~TCPServer() {
-        for (auto & sock : m_socks) {
+        for (auto &sock: m_socks) {
             sock->close();
         }
+        m_socks.clear();
     }
 
-    bool TCPServer::bind(const Address::ptr &address) {
+    bool TCPServer::bind(Address::ptr address) {
         Socket::ptr sock = Socket::CreateTCP(address);
         if (!sock->bind(address)) {
             LUWU_LOG_ERROR(g_logger) << "bind filed errno=" << errno
@@ -38,7 +37,7 @@ namespace liucxi {
     }
 
     bool TCPServer::bind(const std::vector<Address::ptr> &addresses) {
-        for (auto &addr : addresses) {
+        for (auto &addr: addresses) {
             if (!bind(addr)) {
                 m_socks.clear();
                 return false;
@@ -47,7 +46,7 @@ namespace liucxi {
         return true;
     }
 
-    void TCPServer::startAccept(const Socket::ptr &sock) {
+    void TCPServer::startAccept(Socket::ptr sock) {
         while (!m_stop) {
             Socket::ptr client = sock->accept();
             if (client) {
@@ -67,8 +66,8 @@ namespace liucxi {
             return true;
         }
         m_stop = false;
-        for (auto & sock : m_socks) {
-            m_worker->scheduler([server = shared_from_this(), sock] {
+        for (auto &sock: m_socks) {
+            m_accept->scheduler([server = shared_from_this(), sock] {
                 server->startAccept(sock);
             });
         }
@@ -77,8 +76,9 @@ namespace liucxi {
 
     void TCPServer::stop() {
         m_stop = true;
-        m_worker->scheduler([this](){
-            for (auto &sock : m_socks) {
+        auto self = shared_from_this();
+        m_accept->scheduler([this, self]() {
+            for (auto &sock: m_socks) {
                 sock->cancelAll();
                 sock->close();
             }
@@ -86,8 +86,7 @@ namespace liucxi {
         });
     }
 
-    void TCPServer::handleClient(const Socket::ptr &client) {
-        std::cout << "handle" << std::endl;
+    void TCPServer::handleClient(Socket::ptr client) {
         LUWU_LOG_INFO(g_logger) << "handleClient" << *client;
     }
 
@@ -97,7 +96,7 @@ namespace liucxi {
            << " worker = " << (m_worker ? m_worker->getName() : "")
            << " recv_timeout = " << m_recvTimeout
            << "]" << std::endl;
-        for (auto & sock : m_socks) {
+        for (auto &sock: m_socks) {
             ss << "sock " << *sock << std::endl;
         }
         return ss.str();

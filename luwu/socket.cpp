@@ -181,6 +181,15 @@ namespace liucxi {
         return true;
     }
 
+    bool Socket::reconnect(uint64_t timeout) {
+        if (!m_remoteAddress) {
+            LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "reconnect remote address is null";
+            return false;
+        }
+        m_localAddress.reset();
+        return connect(m_remoteAddress, timeout);
+    }
+
     bool Socket::listen(int backlog) const {
         if (!isValid()) {
             LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "listen error sock=-1";

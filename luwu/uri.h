@@ -10,6 +10,16 @@
 
 namespace liucxi {
 
+    /**
+     * @brief URI 封装类
+     */
+
+    /*
+     foo://user@sylar.com:8042/over/there?name=ferret#nose
+       \_/   \______________/\_________/ \_________/ \__/
+        |           |            |            |        |
+     scheme     authority       path        query   fragment
+    */
     class URI {
     public:
         typedef std::shared_ptr<URI> ptr;

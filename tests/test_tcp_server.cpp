@@ -9,10 +9,10 @@ static liucxi::Logger::ptr g_logger = LUWU_LOG_ROOT();
  */
 class MyTcpServer : public liucxi::TCPServer {
 protected:
-    void handleClient(const liucxi::Socket::ptr &client) override;
+    void handleClient(liucxi::Socket::ptr client) override;
 };
 
-void MyTcpServer::handleClient(const liucxi::Socket::ptr &client) {
+void MyTcpServer::handleClient(liucxi::Socket::ptr client) {
     LUWU_LOG_INFO(g_logger) << "new client: " << *client;
     static std::string buf;
     buf.resize(4096);
