@@ -15,6 +15,9 @@
 namespace liucxi {
     namespace http {
 
+        /**
+         * @brief HTTP 响应结果
+         */
         struct HttpResult {
             typedef std::shared_ptr<HttpResult> ptr;
 

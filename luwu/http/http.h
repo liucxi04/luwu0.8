@@ -15,6 +15,9 @@
 namespace liucxi {
     namespace http {
 
+        /**
+         * @brief HTTP 方法枚举类
+         */
         enum class HttpMethod {
 #define XX(num, name, string) name = num,
             HTTP_METHOD_MAP(XX)
@@ -22,6 +25,9 @@ namespace liucxi {
             INVALID_METHOD
         };
 
+        /**
+         * @brief HTTP 状态枚举类
+         */
         enum class HttpStatus {
 #define XX(code, name, desc) name = code,
             HTTP_STATUS_MAP(XX)
@@ -40,6 +46,11 @@ namespace liucxi {
             bool operator()(const std::string &lhs, const std::string &rhs) const;
         };
 
+        /**
+         * @brief 获取 Map 中的 key 值,并转成对应类型,返回是否成功
+         * @param val 保存转换后的值
+         * @param def 默认值
+         */
         template<typename MapType, typename T>
         bool checkGetAs(const MapType &m, const std::string &key, T &val, const T &def = T()) {
             auto it = m.find(key);
@@ -49,12 +60,16 @@ namespace liucxi {
             }
             try {
                 val = boost::lexical_cast<T>(it->second);
+                return true;
             } catch (...) {
                 val = def;
             }
             return false;
         }
 
+        /**
+         * @brief 获取 Map 中的 key 值,并转成对应类型
+         */
         template<typename MapType, typename T>
         T getAs(const MapType &m, const std::string &key, const T &def = T()) {
             auto it = m.find(key);
@@ -68,6 +83,11 @@ namespace liucxi {
             return def;
         }
 
+        class HttpResponse;
+
+        /**
+         * @brief Http 请求结构
+         */
         class HttpRequest {
         public:
             typedef std::shared_ptr<HttpRequest> ptr;
@@ -75,6 +95,8 @@ namespace liucxi {
             typedef std::map<std::string, std::string, CaseInsensitiveLess> MapType;
 
             explicit HttpRequest(uint8_t version = 0x11, bool close = true);
+
+            std::shared_ptr<HttpResponse> createResponse() const;
 
             HttpMethod getMethod() const { return m_method; }
 
@@ -110,17 +132,21 @@ namespace liucxi {
 
             void setParams(const MapType &params) { m_params = params; }
 
-            void setCookies(const MapType &params) { m_params = params; }
+            void setCookies(const MapType &params) { m_cookies = params; }
 
             bool isClose() const { return m_close; }
 
             void setClose(bool close) { m_close = close; }
 
+            bool isWebSocket() const { return m_webSocket; }
+
+            void setWebSocket(bool webSocket) { m_webSocket = webSocket; }
+
             std::string getHeader(const std::string &key, const std::string &def = "") const;
 
-            std::string getParam(const std::string &key, const std::string &def = "") const;
+            std::string getParam(const std::string &key, const std::string &def = "");
 
-            std::string getCookie(const std::string &key, const std::string &def = "") const;
+            std::string getCookie(const std::string &key, const std::string &def = "");
 
             void setHeader(const std::string &key, const std::string &val) { m_headers[key] = val; }
 
@@ -152,16 +178,21 @@ namespace liucxi {
 
             template<typename T>
             bool checkGetParamAs(const std::string &key, T &val, const T &def = T()) {
+                initQueryParam();
+                initBodyParam();
                 return checkGetAs(m_params, key, val, def);
             }
 
             template<typename T>
             T getParamAs(const std::string &key, const T &def = T()) {
+                initQueryParam();
+                initBodyParam();
                 return getAs(m_params, key, def);
             }
 
             template<typename T>
             bool checkGetCookieAs(const std::string &key, T &val, const T &def = T()) {
+                initCookies();
                 return checkGetAs(m_cookies, key, val, def);
             }
 
@@ -183,14 +214,15 @@ namespace liucxi {
             void init();
 
         private:
-            bool m_close;
-            bool m_webSocket;
-            uint8_t m_status;
+            bool m_close;           /// 是否自动关闭
+            bool m_webSocket;       /// 是否是 web socket
+            uint8_t m_status;       /// 参数解析状态
+            /// 0:未解析，1:已解析url参数, 2:已解析http消息体中的参数，4:已解析cookies
 
-            HttpMethod m_method;
-            uint8_t m_version;
+            HttpMethod m_method;    /// HTTP 请求方法
+            uint8_t m_version;      /// HTTP 版本
 
-            std::string m_url;
+            std::string m_url;      /// 请求的完整 url
 
             std::string m_path;
             std::string m_query;
@@ -239,28 +271,40 @@ namespace liucxi {
 
             void setWebSocket(bool webSocket) { m_webSocket = webSocket; }
 
-            std::string getHeader(const std::string& key, const std::string& def = "") const;
+            std::string getHeader(const std::string &key, const std::string &def = "") const;
 
-            void setHeader(const std::string& key, const std::string& val) { m_headers[key] = val; }
+            void setHeader(const std::string &key, const std::string &val) { m_headers[key] = val; }
 
-            void delHeader(const std::string& key) { m_headers.erase(key); }
+            void delHeader(const std::string &key) { m_headers.erase(key); }
 
             template<class T>
-            bool checkGetHeaderAs(const std::string& key, T& val, const T& def = T()) {
+            bool checkGetHeaderAs(const std::string &key, T &val, const T &def = T()) {
                 return checkGetAs(m_headers, key, val, def);
             }
 
             template<class T>
-            T getHeaderAs(const std::string& key, const T& def = T()) {
+            T getHeaderAs(const std::string &key, const T &def = T()) {
                 return getAs(m_headers, key, def);
             }
 
-            std::ostream& dump(std::ostream& os) const;
+            std::ostream &dump(std::ostream &os) const;
 
             std::string toString() const;
 
+            /**
+             * @brief 设置重定向
+             */
+            void setRedirect(const std::string &uri);
+
+            /**
+             * @brief 为响应添加 cookie
+             */
+            void setCookie(const std::string& key, const std::string& val,
+                           time_t expired = 0, const std::string& path = "",
+                           const std::string& domain = "", bool secure = false);
+
         private:
-            HttpStatus m_status;
+            HttpStatus m_status;                /// HTTP 响应状态
             uint8_t m_version;
             bool m_close;
             bool m_webSocket;

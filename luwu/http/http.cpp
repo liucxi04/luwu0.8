@@ -3,6 +3,7 @@
 //
 
 #include "http.h"
+#include "ext.h"
 
 namespace liucxi {
     namespace http {
@@ -61,17 +62,25 @@ namespace liucxi {
                   m_path("/") {
         }
 
+        std::shared_ptr<HttpResponse> HttpRequest::createResponse() const {
+            HttpResponse::ptr rsp(new HttpResponse(getVersion(), isClose()));
+            return rsp;
+        }
+
         std::string HttpRequest::getHeader(const std::string &key, const std::string &def) const {
             auto it = m_headers.find(key);
             return it == m_headers.end() ? def : it->second;
         }
 
-        std::string HttpRequest::getParam(const std::string &key, const std::string &def) const {
+        std::string HttpRequest::getParam(const std::string &key, const std::string &def) {
+            initQueryParam();
+            initBodyParam();
             auto it = m_params.find(key);
             return it == m_params.end() ? def : it->second;
         }
 
-        std::string HttpRequest::getCookie(const std::string &key, const std::string &def) const {
+        std::string HttpRequest::getCookie(const std::string &key, const std::string &def) {
+            initCookies();
             auto it = m_cookies.find(key);
             return it == m_cookies.end() ? def : it->second;
         }
@@ -88,6 +97,8 @@ namespace liucxi {
         }
 
         bool HttpRequest::hasParam(const std::string &key, std::string *val) {
+            initQueryParam();
+            initBodyParam();
             auto it = m_params.find(key);
             if (it == m_params.end()) {
                 return false;
@@ -99,6 +110,7 @@ namespace liucxi {
         }
 
         bool HttpRequest::hasCookie(const std::string &key, std::string *val) {
+            initCookies();
             auto it = m_cookies.find(key);
             if (it == m_cookies.end()) {
                 return false;
@@ -118,8 +130,10 @@ namespace liucxi {
         std::ostream &HttpRequest::dump(std::ostream &os) const {
             os << HttpMethodToString(m_method) << " "
                << m_path
-               << (m_query.empty() ? "" : "?") << m_query
-               << (m_fragment.empty() ? "" : "#") << m_fragment
+               << (m_query.empty() ? "" : "?")
+               << m_query
+               << (m_fragment.empty() ? "" : "#")
+               << m_fragment
                << " HTTP/"
                << ((uint32_t) (m_version >> 4)) << "." << ((uint32_t) (m_version & 0x0f))
                << "\r\n";
@@ -140,26 +154,75 @@ namespace liucxi {
             if (!m_body.empty()) {
                 os << "content-length: " << m_body.size() << "\r\n\r\n" << m_body;
             } else {
-                os << "\r\n\r\n";
+                os << "\r\n";
             }
 
             return os;
         }
 
         void HttpRequest::initQueryParam() {
+            if (m_status & 0x1) {
+                return;
+            }
 
+#define PARSE_PARAM(str, m, flag, trim)                                                                    \
+    size_t pos = 0;                                                                                        \
+    do {                                                                                                   \
+        size_t last = pos;                                                                                 \
+        pos         = str.find('=', pos);                                                                  \
+        if (pos == std::string::npos) {                                                                    \
+            break;                                                                                         \
+        }                                                                                                  \
+        size_t key = pos;                                                                                  \
+        pos        = str.find(flag, pos);                                                                  \
+                                                                                                           \
+        m.insert(std::make_pair(liucxi::StringUtil::UrlDecode(trim(str.substr(last, key - last))),          \
+                                liucxi::StringUtil::UrlDecode(str.substr(key + 1, pos - key - 1))));        \
+        if (pos == std::string::npos) {                                                                    \
+            break;                                                                                         \
+        }                                                                                                  \
+        ++pos;                                                                                             \
+    } while (true);
+
+            PARSE_PARAM(m_query, m_params, '&',);
+            m_status |= 0x1;
         }
 
         void HttpRequest::initBodyParam() {
-
+            if (m_status & 0x2) {
+                return;
+            }
+            std::string content_type = getHeader("content-type");
+            if (strcasestr(content_type.c_str(), "application/x-www-form-urlencoded") == nullptr) {
+                m_status |= 0x2;
+                return;
+            }
+            PARSE_PARAM(m_body, m_params, '&', );
+            m_status |= 0x2;
         }
 
         void HttpRequest::initCookies() {
-
+            if (m_status & 0x4) {
+                return;
+            }
+            std::string cookie = getHeader("cookie");
+            if (cookie.empty()) {
+                m_status |= 0x4;
+                return;
+            }
+            PARSE_PARAM(cookie, m_cookies, ';', liucxi::StringUtil::Trim);
+            m_status |= 0x4;
         }
 
         void HttpRequest::init() {
-
+            std::string conn = getHeader("connection");
+            if (!conn.empty()) {
+                if (strcasecmp(conn.c_str(), "keep-alive") == 0) {
+                    m_close = false;
+                } else {
+                    m_close = true;
+                }
+            }
         }
 
         HttpResponse::HttpResponse(uint8_t version, bool close)
@@ -202,6 +265,30 @@ namespace liucxi {
                 os << "\r\n";
             }
             return os;
+        }
+
+        void HttpResponse::setRedirect(const std::string &uri) {
+            m_status = HttpStatus::FOUND;
+            setHeader("Location", uri);
+        }
+
+        void HttpResponse::setCookie(const std::string &key, const std::string &val, time_t expired,
+                                     const std::string &path, const std::string &domain, bool secure) {
+            std::stringstream ss;
+            ss << key << "=" << val;
+            if (expired > 0) {
+                ss << ";expires=" << liucxi::Time2Str(expired, "%a, %d %b %Y %H:%M:%S") << " GMT";
+            }
+            if (!domain.empty()) {
+                ss << ";domain=" << domain;
+            }
+            if (!path.empty()) {
+                ss << ";path=" << path;
+            }
+            if (secure) {
+                ss << ";secure";
+            }
+            m_cookies.push_back(ss.str());
         }
 
         std::ostream &operator<<(std::ostream &os, const HttpRequest &req) {

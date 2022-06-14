@@ -3,7 +3,7 @@
 liucxi::Logger::ptr g_logger = LUWU_LOG_ROOT();
 liucxi::IOManager::ptr worker;
 void run() {
-    liucxi::http::HttpServer::ptr http_server(new liucxi::http::HttpServer);
+    liucxi::http::HttpServer::ptr http_server(new liucxi::http::HttpServer(true));
     liucxi::Address::ptr addr = liucxi::Address::LookupAnyIPAddress("0.0.0.0:8020");
     if(!addr) {
         LUWU_LOG_ERROR(g_logger) << "get address error";
