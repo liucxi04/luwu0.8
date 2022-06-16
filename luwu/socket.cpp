@@ -157,7 +157,7 @@ namespace liucxi {
             return false;
         }
 
-        if (timeout == -1) {
+        if (timeout == (uint64_t)-1) {
             if (::connect(m_sock, addr->getAddr(), addr->getAddrLen())) {
                 LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "sock=" << m_sock << " connect(" << addr->toString()
                                                         << ") error errno=" << errno

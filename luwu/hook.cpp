@@ -123,7 +123,7 @@ static ssize_t do_io(int fd, OriginFun fun, const char *hook_fun_name,
         liucxi::Timer::ptr timer;
 
         // 如果设置了超时时间
-        if (timeout != -1) {
+        if (timeout != (uint64_t)-1) {
             timer = iom->addConditionTimer(timeout, [winfo, fd, iom, event]() {
                 auto t = winfo.lock();
                 if (!t || t->cancelled) {
@@ -238,7 +238,7 @@ int connect_with_timeout(int sockfd, const struct sockaddr *addr, socklen_t addl
     std::weak_ptr<timer_info> winfo(tinfo);
 
     // 如果设置了超时参数，那么添加一个条件定时器
-    if (timeout != -1) {
+    if (timeout != (uint64_t)-1) {
         timer = iom->addConditionTimer(timeout, [winfo, iom, sockfd](){
             auto t = winfo.lock();
             if (!t || t->cancelled) {

@@ -58,7 +58,7 @@ namespace liucxi {
         }
 
         HttpRequest::HttpRequest(uint8_t version, bool close)
-                : m_method(HttpMethod::GET), m_version(version), m_close(close), m_webSocket(false), m_status(0),
+                : m_close(close), m_webSocket(false), m_status(0), m_method(HttpMethod::GET), m_version(version),
                   m_path("/") {
         }
 
@@ -226,7 +226,7 @@ namespace liucxi {
         }
 
         HttpResponse::HttpResponse(uint8_t version, bool close)
-                : m_version(version), m_close(close), m_status(HttpStatus::OK), m_webSocket(false) {
+                : m_status(HttpStatus::OK), m_version(version), m_close(close), m_webSocket(false) {
         }
 
         std::string HttpResponse::getHeader(const std::string &key, const std::string &def) const {

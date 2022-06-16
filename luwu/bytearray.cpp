@@ -11,11 +11,11 @@
 namespace liucxi {
 
     ByteArray::Node::Node()
-            : ptr(nullptr), size(0), next(nullptr) {
+            : ptr(nullptr), next(nullptr), size(0) {
     }
 
     ByteArray::Node::Node(size_t s)
-            : ptr(new char[s]), size(s), next(nullptr) {
+            : ptr(new char[s]), next(nullptr), size(s) {
     }
 
     ByteArray::Node::~Node() {
@@ -23,8 +23,8 @@ namespace liucxi {
     }
 
     ByteArray::ByteArray(size_t base_size)
-            : m_baseSize(base_size), m_position(0), m_capacity(base_size), m_size(0), m_root(new Node(base_size)),
-              m_cur(m_root), m_endian(BIG_ENDIAN) {
+            : m_baseSize(base_size), m_position(0), m_capacity(base_size), m_size(0), m_endian(BIG_ENDIAN),
+              m_root(new Node(base_size)), m_cur(m_root) {
     }
 
     ByteArray::~ByteArray() {
