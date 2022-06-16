@@ -19,11 +19,13 @@ namespace liucxi {
 
             explicit HttpServer(bool keepalive = false,
                                 liucxi::IOManager *worker = liucxi::IOManager::GetThis(),
-                                liucxi::IOManager *tcp_worker = liucxi::IOManager::GetThis());
+                                liucxi::IOManager *accept = liucxi::IOManager::GetThis());
 
             ServletDispatch::ptr getDispatch() const { return m_dispatch; }
 
             void setDispatch(ServletDispatch::ptr dispatch) { m_dispatch = std::move(dispatch); }
+
+            void setName(std::string name) override;
 
         protected:
             void handleClient(Socket::ptr sock) override;

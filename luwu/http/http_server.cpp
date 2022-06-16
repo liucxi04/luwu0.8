@@ -6,9 +6,14 @@
 
 namespace liucxi {
     namespace http {
-        HttpServer::HttpServer(bool keepalive, liucxi::IOManager *worker, liucxi::IOManager *tcp_worker)
-                : TCPServer(tcp_worker), m_keepalive(keepalive) {
+        HttpServer::HttpServer(bool keepalive, liucxi::IOManager *worker, liucxi::IOManager *accept)
+                : TCPServer(worker, accept), m_keepalive(keepalive) {
             m_dispatch.reset(new ServletDispatch);
+        }
+
+        void HttpServer::setName(std::string name) {
+            TCPServer::setName(std::move(name));
+            m_dispatch->setDefault(std::make_shared<ServletNotFound>(name));
         }
 
         void HttpServer::handleClient(Socket::ptr sock) {
@@ -19,13 +24,18 @@ namespace liucxi {
                     LUWU_LOG_ERROR(LUWU_LOG_NAME("system")) << "recv http request failed, errno=" << errno
                                                             << " errstr=" << strerror(errno)
                                                             << "client:" << *sock;
+                    break;
                 }
                 HttpResponse::ptr rsp(new HttpResponse(req->getVersion(),
                                                                req->isClose() || !m_keepalive));
+                rsp->setHeader("Server", getName());
                 m_dispatch->handle(req, rsp, session);
-//                rsp->setBody("liucxi");
                 session->sendResponse(rsp);
-            } while (m_keepalive);
+
+                if (!m_keepalive || req->isClose()) {
+                    break;
+                }
+            } while (true);
             session->close();
         }
     }

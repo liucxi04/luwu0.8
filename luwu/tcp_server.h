@@ -39,7 +39,7 @@ namespace liucxi {
 
         std::string getName() const { return m_name; }
 
-        void setName(std::string name) { m_name = std::move(name); }
+        virtual void setName(std::string name) { m_name = std::move(name); }
 
         bool isStop() const { return m_stop; }
 
