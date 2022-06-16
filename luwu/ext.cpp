@@ -15,6 +15,15 @@ namespace liucxi {
         return buf;
     }
 
+    time_t Str2Time(const char *str, const char *format) {
+        struct tm t;
+        memset(&t, 0, sizeof(t));
+        if (!strptime(str, format, &t)) {
+            return 0;
+        }
+        return mktime(&t);
+    }
+
     std::string StringUtil::Format(const char* fmt, ...) {
         va_list ap;
         va_start(ap, fmt);

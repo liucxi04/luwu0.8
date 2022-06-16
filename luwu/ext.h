@@ -14,6 +14,11 @@ namespace liucxi {
     */
     std::string Time2Str(time_t ts = time(nullptr), const std::string &format = "%Y-%m-%d %H:%M:%S");
 
+    /**
+    * @brief 字符串转日期时间
+    */
+    time_t Str2Time(const char *str, const char *format = "%Y-%m-%d %H:%M:%S");
+
     class StringUtil {
     public:
         /**

@@ -28,7 +28,7 @@ namespace liucxi {
      * @param is_daemon 是否使用守护进程方式启动
      */
     int start_daemon(int argc, char **argv,
-                     std::functiona<int(int argc, char **argv)> main_cb,
+                     const std::function<int(int argc, char **argv)>& main_cb,
                      bool is_daemon);
 }
 #endif //LUWU_DAEMON_H

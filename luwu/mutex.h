@@ -7,6 +7,7 @@
 
 #include <semaphore.h>
 #include <atomic>
+#include <stdexcept>
 #include "noncopyable.h"
 
 namespace liucxi {

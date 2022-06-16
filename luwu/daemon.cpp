@@ -5,6 +5,8 @@
 #include "macro.h"
 #include "config.h"
 #include "utils.h"
+#include "ext.h"
+#include <sys/wait.h>
 
 namespace liucxi {
 
@@ -22,12 +24,12 @@ namespace liucxi {
         return ss.str();
     }
 
-    int real_start(int argc, char **argv, std::function<int(int argc, char **argv)> main_cb) {
+    int real_start(int argc, char **argv, const std::function<int(int argc, char **argv)> &main_cb) {
         return main_cb(argc, argv);
     }
 
-    int real_daemon(int argc, char **argv, std::function<int(int argc, char **argv)> main_cb) {
-        daemon(1, 0);
+    int real_daemon(int argc, char **argv, const std::function<int(int argc, char **argv)> &main_cb) {
+//        daemon(1, 0);
         ProcessInfoMgr::getInstance()->parent_id = getpid();
         ProcessInfoMgr::getInstance()->parent_start_time = time(nullptr);
         while (true) {
@@ -58,7 +60,7 @@ namespace liucxi {
     }
 
     int start_daemon(int argc, char **argv,
-                     std::function<int(int argc, char **argv)> main_cb,
+                     const std::function<int(int argc, char **argv)> &main_cb,
                      bool is_daemon) {
         if (!is_daemon) {
             return real_start(argc, argv, main_cb);
