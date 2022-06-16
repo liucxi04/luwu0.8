@@ -34,7 +34,8 @@ set(SRC
         luwu/http/servlet.cpp
         luwu/http/http_connection.cpp
         luwu/uri.cpp
-        luwu/ext.cpp)
+        luwu/ext.cpp
+        luwu/daemon.cpp)
 
 add_library(luwu SHARED ${SRC})
 
