@@ -289,7 +289,7 @@ namespace liucxi {
             uint64_t next_timeout = 0;
             /// 获取最近一个定时器的超时时间，判断调度是否停止
             if (stopping(next_timeout)) {
-                LUWU_LOG_INFO(g_logger) << "name=" << getName() << "idle stopping exit";
+                LUWU_LOG_INFO(g_logger) << "name = " << getName() << "idle stopping exit";
                 break;
             }
 

@@ -36,7 +36,8 @@ set(SRC
         luwu/uri.cpp
         luwu/ext.cpp
         luwu/daemon.cpp
-        luwu/env.cpp)
+        luwu/env.cpp
+        luwu/application.cpp)
 
 add_library(luwu SHARED ${SRC})
 
@@ -136,3 +137,7 @@ target_link_libraries(test_daemon luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARI
 add_executable(test_env tests/test_env.cpp)
 add_dependencies(test_env luwu)
 target_link_libraries(test_env luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
+
+add_executable(test_application tests/test_application.cpp)
+add_dependencies(test_application luwu)
+target_link_libraries(test_application luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)

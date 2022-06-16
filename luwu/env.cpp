@@ -41,6 +41,7 @@ namespace liucxi {
             } else {
                 if (now_key) {
                     add(now_key, argv[i]);
+                    now_key = nullptr;
                 } else {
                     LUWU_LOG_ERROR(g_logger) << "invalid arg idx=" << i
                                              << " val=" << argv[i];

@@ -10,8 +10,69 @@
 #include "iomanager.h"
 #include "address.h"
 #include "socket.h"
+#include "config.h"
 
 namespace liucxi {
+
+    struct TcpServerConf {
+        typedef std::shared_ptr<TcpServerConf> ptr;
+
+        std::vector<std::string> address;
+        int keepalive = 0;
+        int timeout = 1000 * 2 * 60;
+        /// 服务器类型，http, ws, rock
+        std::string type = "http";
+        std::string name;
+
+        bool isValid() const {
+            return !address.empty();
+        }
+
+        bool operator==(const TcpServerConf& oth) const {
+            return address == oth.address
+                   && keepalive == oth.keepalive
+                   && timeout == oth.timeout
+                   && name == oth.name
+                   && type == oth.type;
+        }
+    };
+
+    template<>
+    class LexicalCast<std::string, TcpServerConf> {
+    public:
+        TcpServerConf operator()(const std::string& v) {
+            YAML::Node node = YAML::Load(v);
+            TcpServerConf conf;
+            conf.type = node["type"].as<std::string>(conf.type);
+            conf.keepalive = node["keepalive"].as<int>(conf.keepalive);
+            conf.timeout = node["timeout"].as<int>(conf.timeout);
+            conf.name = node["name"].as<std::string>(conf.name);
+            if(node["address"].IsDefined()) {
+                for(size_t i = 0; i < node["address"].size(); ++i) {
+                    conf.address.push_back(node["address"][i].as<std::string>());
+                }
+            }
+            return conf;
+        }
+    };
+
+    template<>
+    class LexicalCast<TcpServerConf, std::string> {
+    public:
+        std::string operator()(const TcpServerConf& conf) {
+            YAML::Node node;
+            node["type"] = conf.type;
+            node["name"] = conf.name;
+            node["keepalive"] = conf.keepalive;
+            node["timeout"] = conf.timeout;
+            for(auto& i : conf.address) {
+                node["address"].push_back(i);
+            }
+            std::stringstream ss;
+            ss << node;
+            return ss.str();
+        }
+    };
 
     /**
      * @brief TCP 服务器封装
