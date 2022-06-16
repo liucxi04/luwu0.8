@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "exe: " << g_env->getExe() << std::endl;
     std::cout  <<"cwd: " << g_env->getCwd() << std::endl;
-    std::cout  << "absoluth path of test: " << g_env->getAbsolutePath("test") << std::endl;
+    std::cout  << "absolute path of test: " << g_env->getAbsolutePath("test") << std::endl;
     std::cout  << "conf path:" << g_env->getConfigPath() << std::endl;
 
     g_env->add("key1", "value1");

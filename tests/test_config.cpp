@@ -1,13 +1,14 @@
 #include "log.h"
 #include "config.h"
 #include "ready.h"
+#include "env.h"
 #include <iostream>
 
 liucxi::ConfigVar<int>::ptr g_int =
-        liucxi::Config::lookup("global.int", (int)8080, "global int");
+        liucxi::Config::lookup("global.int", (int) 8080, "global int");
 
 liucxi::ConfigVar<float>::ptr g_float =
-        liucxi::Config::lookup("global.float", (float)10.2f, "global float");
+        liucxi::Config::lookup("global.float", (float) 10.2f, "global float");
 
 // 字符串需显示构造，不能传字符串常量
 liucxi::ConfigVar<std::string>::ptr g_string =
@@ -21,13 +22,15 @@ liucxi::ConfigVar<std::set<int>>::ptr g_int_set =
 
 liucxi::ConfigVar<std::map<std::string, int>>::ptr g_map_string2int =
         liucxi::Config::lookup("global.map_string2int", std::map<std::string, int>
-                                                {{"key1", 1},{"key2", 2}}, "global map string2int");
+                {{"key1", 1},
+                 {"key2", 2}}, "global map string2int");
 
 ////////////////////////////////////////////////////////////
 // 自定义配置
 class Person {
 public:
     Person() = default;
+
     std::string m_name;
     int m_age = 0;
     bool m_sex = false;
@@ -37,7 +40,7 @@ public:
         ss << "[Person name=" << m_name
            << " age=" << m_age
            << " sex=" << m_sex
-           <<"]";
+           << "]";
         return ss.str();
     }
 
@@ -91,22 +94,22 @@ liucxi::ConfigVar<std::map<std::string, std::vector<Person>>>::ptr g_person_vec_
 void test_class() {
     static uint64_t id = 14;
 
-    if(!g_person->getListener(id)) {
-        g_person->addListener([](const Person &old_value, const Person &new_value){
+    if (!g_person->getListener(id)) {
+        g_person->addListener([](const Person &old_value, const Person &new_value) {
             std::cout << "g_person value change, old value:" << old_value.toString()
-                                     << ", new value:" << new_value.toString() << std::endl;
+                      << ", new value:" << new_value.toString() << std::endl;
         });
     }
 
     std::cout << g_person->getValue().toString() << std::endl;
 
-    for (const auto &i : g_person_map->getValue()) {
+    for (const auto &i: g_person_map->getValue()) {
         std::cout << i.first << ":" << i.second.toString() << std::endl;
     }
 
-    for(const auto &i : g_person_vec_map->getValue()) {
+    for (const auto &i: g_person_vec_map->getValue()) {
         std::cout << i.first;
-        for(const auto &j : i.second) {
+        for (const auto &j: i.second) {
             std::cout << j.toString() << std::endl;
         }
     }
@@ -118,7 +121,7 @@ template<class T>
 std::string formatArray(const T &v) {
     std::stringstream ss;
     ss << "[";
-    for(const auto &i:v) {
+    for (const auto &i: v) {
         ss << " " << i;
     }
     ss << " ]";
@@ -129,7 +132,7 @@ template<class T>
 std::string formatMap(const T &m) {
     std::stringstream ss;
     ss << "{";
-    for(const auto &i:m) {
+    for (const auto &i: m) {
         ss << " {" << i.first << ":" << i.second << "}";
     }
     ss << " }";
@@ -142,7 +145,8 @@ void test_config() {
     std::cout << "g_string value: " << g_string->getValue() << std::endl;
     std::cout << "g_int_vec value: " << formatArray<std::vector<int>>(g_int_vec->getValue()) << std::endl;
     std::cout << "g_int_set value: " << formatArray<std::set<int>>(g_int_set->getValue()) << std::endl;
-    std::cout << "g_int_map value: " << formatMap<std::map<std::string, int>>(g_map_string2int->getValue()) << std::endl;
+    std::cout << "g_int_map value: " << formatMap<std::map<std::string, int>>(g_map_string2int->getValue())
+              << std::endl;
     // 自定义配置项
     test_class();
 }
@@ -166,14 +170,24 @@ void test_config() {
 //}
 int main(int argc, char *argv[]) {
 
-    std::cout << "before============================" << std::endl;
-    std::cout << liucxi::g_logDefines->toString() << std::endl;
+//    std::cout << "before============================" << std::endl;
+//    std::cout << liucxi::g_logDefines->toString() << std::endl;
+//
+//    YAML::Node node = YAML::LoadFile("../conf/log.yml");
+//    liucxi::Config::loadFromYaml(node);
+//
+//    std::cout << "after============================" << std::endl;
+//    std::cout << liucxi::g_logDefines->toString() << std::endl;
 
-    YAML::Node node = YAML::LoadFile("../conf/log.yml");
-    liucxi::Config::loadFromYaml(node);
-
-    std::cout << "after============================" << std::endl;
-    std::cout << liucxi::g_logDefines->toString() << std::endl;
-
+    // 从配置文件中加载配置，由于更新了配置，会触发配置项的配置变更回调函数
+    liucxi::EnvMgr::getInstance()->init(argc, argv);
+    std::cout << liucxi::EnvMgr::getInstance()->getAbsolutePath("conf") << std::endl;
+    liucxi::Config::LoadFromConfDir("conf");
+    liucxi::Config::visit([](const liucxi::ConfigVarBase::ptr &var) {
+        std::cout << "name=" << var->getName()
+                  << " description=" << var->getDescribe()
+                  << " value=" << var->toString()
+                  << std::endl;
+    });
     return 0;
 }

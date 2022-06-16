@@ -47,7 +47,7 @@ target_link_libraries(log luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yam
 
 add_executable(config tests/test_config.cpp)
 add_dependencies(config luwu)
-target_link_libraries(config luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp)
+target_link_libraries(config luwu ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARICES} yaml-cpp dl)
 
 add_executable(thread tests/test_thread.cpp)
 add_dependencies(thread luwu)

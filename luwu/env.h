@@ -35,9 +35,9 @@ namespace liucxi {
 
         const std::string &getCwd() const { return m_cwd; }
 
-        bool setEnv(const std::string &key, const std::string &val);
+        static bool setEnv(const std::string &key, const std::string &val);
 
-        std::string getEnv(const std::string &key, const std::string &default_val = "");
+        static std::string getEnv(const std::string &key, const std::string &default_val = "");
 
         std::string getAbsolutePath(const std::string &path) const;
 

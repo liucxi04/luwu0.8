@@ -336,6 +336,8 @@ namespace liucxi {
 
         static void loadFromYaml(const YAML::Node &root);
 
+        static void LoadFromConfDir(const std::string &path, bool force = false);
+
         static void visit(const std::function<void(ConfigVarBase::ptr)>& callback);
 
     private:
