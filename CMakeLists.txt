@@ -62,6 +62,8 @@ set(LIB_SRC
         luwu/daemon.cpp
         luwu/env.cpp
         luwu/application.cpp
+        luwu/library.cpp
+        luwu/module.cpp
         luwu/main.cpp)
 
 add_library(luwu SHARED ${LIB_SRC})
