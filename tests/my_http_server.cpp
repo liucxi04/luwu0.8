@@ -19,7 +19,7 @@ void run() {
 }
 
 int main(int argc, char** argv) {
-    liucxi::IOManager iom(3);
+    liucxi::IOManager iom(2);
     iom.scheduler(run);
     return 0;
 }

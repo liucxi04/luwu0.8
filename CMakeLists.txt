@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(luwu)
 
-include (cmake/utils.cmake)
+include(cmake/utils.cmake)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -23,13 +23,12 @@ include_directories(./luwu)
 option(BUILD_TEST "ON for compile test" ON)
 
 find_package(Boost REQUIRED)
-if(Boost_FOUND)
+if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
-endif()
+endif ()
 
 set(LIB_SRC
         luwu/log.cpp
-        luwu/utils.cpp
         luwu/config.cpp
         luwu/thread.cpp
         luwu/fiber.cpp
@@ -41,21 +40,29 @@ set(LIB_SRC
         luwu/address.cpp
         luwu/socket.cpp
         luwu/bytearray.cpp
-        luwu/http/http.cpp
-        luwu/http/http-parser/http_parser.c
-        luwu/http/http_parser.cpp
         luwu/tcp_server.cpp
         luwu/streams/stream.cpp
         luwu/streams/socket_stream.cpp
+        luwu/utils.cpp
+        luwu/util/hash_util.cpp
+        luwu/util/json_util.cpp
+        luwu/http/http.cpp
+        luwu/http/http-parser/http_parser.c
+        luwu/http/http_parser.cpp
         luwu/http/http_session.cpp
         luwu/http/http_server.cpp
         luwu/http/servlet.cpp
         luwu/http/http_connection.cpp
+        luwu/http/ws_connection.cpp
+        luwu/http/ws_server.cpp
+        luwu/http/ws_servlet.cpp
+        luwu/http/ws_session.cpp
         luwu/uri.cpp
         luwu/ext.cpp
         luwu/daemon.cpp
         luwu/env.cpp
-        luwu/application.cpp)
+        luwu/application.cpp
+        luwu/main.cpp)
 
 add_library(luwu SHARED ${LIB_SRC})
 force_redefine_file_macro_for_sources(luwu)
@@ -65,9 +72,9 @@ set(LIBS
         pthread
         dl
         yaml-cpp
-         )
+        )
 
-if(BUILD_TEST)
+if (BUILD_TEST)
     luwu_add_executable(test_log "tests/test_log.cpp" luwu "${LIBS}")
     luwu_add_executable(test_util "tests/test_utils.cpp" luwu "${LIBS}")
     luwu_add_executable(test_env "tests/test_env.cpp" luwu "${LIBS}")
@@ -87,7 +94,8 @@ if(BUILD_TEST)
     luwu_add_executable(test_uri "tests/test_uri.cpp" luwu "${LIBS}")
     luwu_add_executable(test_http_connection "tests/test_http_connection.cpp" luwu "${LIBS}")
     luwu_add_executable(test_daemon "tests/test_daemon.cpp" luwu "${LIBS}")
-endif()
+    luwu_add_executable(my_http_server "tests/my_http_server.cpp" luwu "${LIBS}")
+endif ()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

@@ -42,6 +42,8 @@ namespace liucxi {
                 POOL_GET_CONNECTION = 8,
                 /// 无效的连接
                 POOL_INVALID_CONNECTION = 9,
+                /// 不是 web socket
+                NOT_WEBSOCKET = 10,
             };
 
             HttpResult(Error e, std::string s, HttpResponse::ptr rsp)
